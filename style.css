@@ -1,0 +1,10 @@
+body {
+    font-family: sans-serif;
+    margin: 30px;
+}
+input[type="file"] {
+    margin-bottom: 10px;
+}
+ul li {
+    margin: 5px 0;
+}

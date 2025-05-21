@@ -1,0 +1,21 @@
+# Ignore the files folder (your uploads, etc.)
+/files/
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore PHP session and logs
+*.log
+*.cache
+*.session
+
+# Ignore IDE/editor folders (add your editor if needed)
+.vscode/
+.idea/
+
+# Ignore node_modules if you ever use Node
+node_modules/
+
+# Ignore composer vendor folder if using PHP Composer
+vendor/
