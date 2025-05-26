@@ -12,19 +12,53 @@ $subPath = $subPath ?? '/';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
   <style>
     html, body {
-      height: 100%;
-      margin: 0;
-    }
+  height: 100%;
+  margin: 0;
+}
+
+@media (max-width: 767.98px) {
+  html, body {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .container-fluid {
+    overflow-y: auto;
+    height: calc(100vh - 56px); /* mobile navbar height */
+  }
+}
+
+@media (min-width: 768px) {
+  body {
+    overflow-y: auto; /* allow scroll on desktop */
+  }
+}
     .file-item {
       cursor: pointer;
     }
     .breadcrumb a {
       text-decoration: none;
     }
+    .navbar {
+      height: 56px;
+      padding: 0;
+    }
+
+    .navbar .container-fluid {
+      height: 100%;
+      align-items: center;
+      padding: 0 1rem;
+    }
+
+    .navbar-brand {
+      font-size: 1.25rem;
+      line-height: 1.2;
+    }
+
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-light bg-light d-md-none">
+  <nav class="navbar navbar-light bg-light d-md-none sticky-top">
     <div class="container-fluid">
       <button class="btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
         <i class="bi bi-list fs-3"></i>
@@ -49,7 +83,7 @@ $subPath = $subPath ?? '/';
   <div class="container-fluid">
     <div class="row flex-nowrap">
       <!-- Sidebar for desktop -->
-      <div class="col-auto col-md-3 col-xl-2 bg-light d-none d-md-block">
+      <div class="col-auto col-md-3 col-xl-2 bg-light d-none d-md-block position-sticky top-0" style="height: 100vh;">
         <div class="d-flex flex-column px-3 pt-2">
           <h5 class="fw-bold text-dark"><i class="bi bi-folder-fill text-warning fs-1"></i> File Manager</h5>
           <ul class="nav nav-pills flex-column">
@@ -107,15 +141,15 @@ $subPath = $subPath ?? '/';
 </div>
 
 <!-- Floating Action Button -->
-<button class="btn btn-primary rounded-circle position-fixed d-md-none"
-        style="bottom: 1rem; right: 1rem; z-index: 1055; width: 60px; height: 60px;"
+<button class="btn btn-primary rounded-circle position-fixed"
+        style="bottom: 1rem; right: 1rem; z-index: 1049; width: 60px; height: 60px;"
         data-bs-toggle="modal" data-bs-target="#actionModal">
   <i class="bi bi-plus-lg fs-3"></i>
 </button>
 
 <!-- Modal for mobile actions -->
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Actions</h5>
@@ -138,7 +172,7 @@ $subPath = $subPath ?? '/';
 
 <!-- New Folder Modal -->
 <div class="modal fade" id="newFolderModal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form id="newFolderForm">
         <div class="modal-header">
