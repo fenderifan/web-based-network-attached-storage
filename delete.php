@@ -29,9 +29,21 @@ if (is_file($fullPath)) {
         exit;
     }
 } elseif (is_dir($fullPath)) {
-    if (!rmdir($fullPath)) {
+    function deleteDir($dir) {
+        foreach (scandir($dir) as $item) {
+            if ($item === '.' || $item === '..') continue;
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                deleteDir($path);
+            } else {
+                unlink($path);
+            }
+        }
+        return rmdir($dir);
+    }
+
+    if (!deleteDir($fullPath)) {
         http_response_code(500);
-        //echo "Folder deletion failed.";
         exit;
     }
 } else {

@@ -79,7 +79,8 @@ $subPath = $subPath ?? '/';
         <p class="fw-semibold mt-2 fs-5">Drop files to upload</p>
       </div>
     </div>
-    <div id="uploadStatus" class="position-fixed bottom-0 end-0 m-3 p-2 bg-white rounded shadow" style="z-index: 1100; max-width: 300px; overflow-y: auto; max-height: 50vh;">
+    
+    <div id="uploadStatus" class="d-none position-fixed bottom-0 end-0 m-3 p-2 bg-white rounded shadow" style="z-index: 1100; max-width: 300px; overflow-y: auto; max-height: 50vh;">
     </div>
 <!-- Rename Modal -->
 <div class="modal fade" id="renameModal" tabindex="-1">
@@ -104,6 +105,60 @@ $subPath = $subPath ?? '/';
     </div>
   </div>
 </div>
+
+<!-- Floating Action Button -->
+<button class="btn btn-primary rounded-circle position-fixed d-md-none"
+        style="bottom: 1rem; right: 1rem; z-index: 1055; width: 60px; height: 60px;"
+        data-bs-toggle="modal" data-bs-target="#actionModal">
+  <i class="bi bi-plus-lg fs-3"></i>
+</button>
+
+<!-- Modal for mobile actions -->
+<div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Actions</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body d-grid gap-2">
+        <button class="btn btn-outline-primary" onclick="triggerMobileUpload()" data-bs-dismiss="modal">
+          <i class="bi bi-upload me-2"></i> Upload File
+        </button>
+        <button class="btn btn-outline-secondary" onclick="showCreateFolderModal()" data-bs-dismiss="modal">
+          <i class="bi bi-folder-plus me-2"></i> New Folder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for upload -->
+<input type="file" id="mobileUploadInput" class="d-none" multiple />
+
+<!-- New Folder Modal -->
+<div class="modal fade" id="newFolderModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="newFolderForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Create New Folder</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="folderName" class="form-label">Folder name</label>
+            <input type="text" class="form-control" id="folderName" name="folderName" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 
 <?php if (strpos($_SERVER['REQUEST_URI'], '/files') === 0): ?>
 <script>
@@ -208,6 +263,8 @@ function uploadFileWithProgress(file) {
 
   const startTime = performance.now();
 
+  statusDiv.classList.remove('d-none');
+
   const container = document.createElement('div');
   container.className = 'mb-2';
 
@@ -243,8 +300,12 @@ function uploadFileWithProgress(file) {
     // ✅ Refresh file list immediately after successful upload
     refreshFileList();
     setTimeout(() => {
-      container.remove();
-    }, 5000);
+  container.remove();
+  if (statusDiv.children.length === 0) {
+    statusDiv.classList.add('d-none');
+  }
+}, 5000);
+
   } else {
     progressBar.classList.replace('bg-success', 'bg-danger');
     statusText.textContent = `Failed: ${xhr.responseText}`;
@@ -283,6 +344,42 @@ document.querySelectorAll('.delete-btn').forEach(button => {
         }
     });
 });
+
+function triggerMobileUpload() {
+  document.getElementById('mobileUploadInput').click();
+}
+
+document.getElementById('mobileUploadInput').addEventListener('change', function () {
+  const files = Array.from(this.files);
+  if (files.length > 0) {
+    files.forEach(uploadFileWithProgress);
+  }
+  this.value = ''; // Reset input
+});
+
+function showCreateFolderModal() {
+  const modal = new bootstrap.Modal(document.getElementById('newFolderModal'));
+  modal.show();
+}
+
+document.getElementById('newFolderForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  const folderName = document.getElementById('folderName').value.trim();
+  if (!folderName) return;
+
+  const formData = new FormData();
+  formData.append('folderName', folderName);
+  formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
+
+  fetch('/create.php', {
+    method: 'POST',
+    body: formData
+  })
+    .then(res => res.ok ? location.reload() : res.text().then(alert))
+    .catch(err => alert("Error: " + err));
+});
+
 
 
 </script>
