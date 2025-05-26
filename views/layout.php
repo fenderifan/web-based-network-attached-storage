@@ -261,6 +261,30 @@ function uploadFileWithProgress(file) {
   xhr.send(formData);
 }
 
+document.querySelectorAll('.delete-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        const filePath = button.getAttribute('data-path');
+        if (!confirm("Are you sure you want to delete this item?")) return;
+
+        try {
+            const response = await fetch('/delete.php?path=' + encodeURIComponent(filePath));
+            if (response.ok) {
+                // Refresh current page to show updated contents
+                window.location.reload();
+            } else {
+                const errorText = await response.text();
+                alert("Delete failed: " + errorText);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("An error occurred during deletion.");
+        }
+    });
+});
+
+
 </script>
 
 <?php endif; ?>

@@ -55,7 +55,13 @@ $items = scandir($fullPath);
   </a>
 </li>
 
-      <li><a class="dropdown-item text-danger" href="delete.php?path=<?= urlencode($itemUri) ?>" onclick="return confirm('Are you sure?');">Delete</a></li>
+      <li>
+  <a href="#" class="dropdown-item text-danger delete-btn"
+     data-path="<?= htmlspecialchars($itemUri) ?>">
+    Delete
+  </a>
+</li>
+
       <li><a class="dropdown-item" href="details.php?path=<?= urlencode($itemUri) ?>">Details</a></li>
     </ul>
   </div>
