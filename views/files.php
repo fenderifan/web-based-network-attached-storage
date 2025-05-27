@@ -22,7 +22,6 @@ $items = scandir($fullPath);
 
 <h4 class="mb-4">Browsing: <code><?= htmlspecialchars('/files' . $subPath) ?></code></h4>
 
-
 <div class="list-group">
   <?php foreach ($items as $item): ?>
     <?php if ($item === '.' || $item === '..') continue; ?>
@@ -34,7 +33,12 @@ $items = scandir($fullPath);
       $typeText = $isDir ? 'Folder' : 'File • ' . round(filesize($itemPath) / 1024, 1) . ' KB';
     ?>
     <div class="list-group-item d-flex justify-content-between align-items-center">
-  <a href="<?= htmlspecialchars($itemUri) ?>" class="d-flex align-items-center gap-3 text-decoration-none flex-grow-1">
+  <?php if ($isDir): ?>
+    <a href="<?= htmlspecialchars($itemUri) ?>" class="d-flex align-items-center gap-3 text-decoration-none flex-grow-1">
+  <?php else: ?>
+    <a href="#" class="d-flex align-items-center gap-3 text-decoration-none flex-grow-1 preview-link" data-bs-toggle="modal" data-bs-target="#previewModal" data-preview="<?= htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri)) ?>">
+  <?php endif; ?>
+
     <i class="bi <?= $icon ?> fs-4"></i>
     <div>
       <div class="fw-semibold"><?= htmlspecialchars($item) ?></div>
@@ -48,26 +52,28 @@ $items = scandir($fullPath);
     </button>
     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton<?= md5($itemUri) ?>">
       <li>
-  <a href="#" class="dropdown-item rename-button"
-     data-path="<?= htmlspecialchars($itemUri) ?>"
-     data-name="<?= htmlspecialchars($item) ?>">
-    Rename
-  </a>
-</li>
-
+        <a class="dropdown-item" href="details.php?path=<?= urlencode($itemUri) ?>">
+          Download
+        </a>
+      </li>
       <li>
-  <a href="#" class="dropdown-item text-danger delete-btn"
-     data-path="<?= htmlspecialchars($itemUri) ?>">
-    Delete
-  </a>
-</li>
-
-      <li><a class="dropdown-item" href="details.php?path=<?= urlencode($itemUri) ?>">Details</a></li>
+        <a href="" class="dropdown-item rename-button" data-path="<?= htmlspecialchars($itemUri) ?>"data-name="<?= htmlspecialchars($item) ?>">
+          Rename
+        </a>
+      </li>
+      <li>
+        <a href="" class="dropdown-item text-danger delete-btn" data-path="<?= htmlspecialchars($itemUri) ?>">
+          Delete
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item" href="details.php?path=<?= urlencode($itemUri) ?>">
+          Details
+        </a>
+      </li>
     </ul>
   </div>
 </div>
-
-
   <?php endforeach; ?>
 </div>
 

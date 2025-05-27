@@ -11,6 +11,7 @@ if ($requestUri === '/' || $requestUri === '/index.php') {
     exit;
 }
 
+
 // Routing
 if ($uri === '/' || $uri === '/files') {
     $view = 'files';

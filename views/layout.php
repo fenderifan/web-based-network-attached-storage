@@ -118,7 +118,7 @@ $subPath = $subPath ?? '/';
     </div>
 <!-- Rename Modal -->
 <div class="modal fade" id="renameModal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form id="renameForm">
         <div class="modal-header">
@@ -198,6 +198,14 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content" id="previewModalContent">
+      <div class="modal-body text-center p-5 text-muted">Loading...</div>
+    </div>
+  </div>
+</div>
 
 
 <?php if (strpos($_SERVER['REQUEST_URI'], '/files') === 0): ?>
@@ -437,10 +445,20 @@ document.getElementById('newFolderForm').addEventListener('submit', function (e)
     .catch(err => alert("Error: " + err));
 });
 
+document.querySelectorAll('.preview-link').forEach(link => {
+  link.addEventListener('click', function (e) {
+    const url = this.dataset.preview;
+    const modalBody = document.getElementById('previewModalContent');
+    modalBody.innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
+    fetch(url)
+      .then(res => res.text())
+      .then(html => modalBody.innerHTML = html)
+      .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
+  });
+});
 
 
 </script>
-
 <?php endif; ?>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </body>
