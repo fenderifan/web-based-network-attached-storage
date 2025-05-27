@@ -128,8 +128,12 @@ $subPath = $subPath ?? '/';
         <div class="modal-body">
           <input type="hidden" name="oldPath" id="oldPathInput">
           <div class="mb-3">
-            <label for="newNameInput" class="form-label">New name</label>
-            <input type="text" class="form-control" id="newNameInput" name="newName" required>
+            <label for="newBaseNameInput" class="form-label">New name</label>
+            <input type="text" class="form-control" id="newBaseNameInput" name="newBaseName" required>
+          </div>
+          <div class="mb-3">
+            <label for="newExtensionInput" class="form-label">Extension</label>
+            <input type="text" class="form-control" id="newExtensionInput" name="newExtension">
           </div>
         </div>
         <div class="modal-footer">
@@ -139,6 +143,7 @@ $subPath = $subPath ?? '/';
     </div>
   </div>
 </div>
+
 
 <!-- Floating Action Button -->
 <button class="btn btn-primary rounded-circle position-fixed"
@@ -192,6 +197,7 @@ $subPath = $subPath ?? '/';
     </div>
   </div>
 </div>
+
 
 
 <?php if (strpos($_SERVER['REQUEST_URI'], '/files') === 0): ?>
@@ -262,8 +268,17 @@ document.querySelectorAll('.rename-button').forEach(btn => {
     const path = btn.dataset.path;
     const name = btn.dataset.name;
 
+    const lastDot = name.lastIndexOf('.');
+    let base = name;
+    let ext = '';
+    if (lastDot !== -1 && lastDot !== 0) {
+      base = name.substring(0, lastDot);
+      ext = name.substring(lastDot + 1);
+    }
+
     document.getElementById('oldPathInput').value = path;
-    document.getElementById('newNameInput').value = name;
+    document.getElementById('newBaseNameInput').value = base;
+    document.getElementById('newExtensionInput').value = ext;
 
     const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
     renameModal.show();
@@ -273,7 +288,14 @@ document.querySelectorAll('.rename-button').forEach(btn => {
 document.getElementById('renameForm').addEventListener('submit', function(e) {
   e.preventDefault();
 
-  const formData = new FormData(this);
+  const base = document.getElementById('newBaseNameInput').value.trim();
+  const ext = document.getElementById('newExtensionInput').value.trim();
+  const formData = new FormData();
+
+  const newName = ext ? `${base}.${ext}` : base;
+
+  formData.append('oldPath', document.getElementById('oldPathInput').value);
+  formData.append('newName', newName);
 
   fetch('/update.php', {
     method: 'POST',
@@ -288,6 +310,7 @@ document.getElementById('renameForm').addEventListener('submit', function(e) {
   })
   .catch(err => alert("Error: " + err));
 });
+
 
 
 function uploadFileWithProgress(file) {

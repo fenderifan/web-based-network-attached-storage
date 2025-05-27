@@ -26,11 +26,19 @@ $folderPath = dirname($oldFullPath);
 $extension = pathinfo($oldFullPath, PATHINFO_EXTENSION);
 
 // Append extension if missing in new name
-if ($extension && pathinfo($newName, PATHINFO_EXTENSION) !== $extension) {
+if (!pathinfo($newName, PATHINFO_EXTENSION)) {
     $newName .= '.' . $extension;
 }
 
+
 $newFullPath = $folderPath . '/' . basename($newName);
+
+// If new path is same as old, skip renaming
+if (realpath($oldFullPath) === realpath($newFullPath)) {
+    http_response_code(200);
+    echo "Name unchanged.";
+    exit;
+}
 
 // Avoid overwriting existing files
 $counter = 1;
