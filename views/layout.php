@@ -144,12 +144,6 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
-
-<!-- Floating Action Button -->
-<button class="btn btn-primary rounded-circle position-fixed" style="bottom: 1rem; right: 1rem; z-index: 1049; width: 60px; height: 60px;" data-bs-toggle="modal" data-bs-target="#actionModal">
-  <i class="bi bi-plus-lg fs-3"></i>
-</button>
-
 <!-- Modal for mobile actions -->
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
