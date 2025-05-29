@@ -146,9 +146,7 @@ $subPath = $subPath ?? '/';
 
 
 <!-- Floating Action Button -->
-<button class="btn btn-primary rounded-circle position-fixed"
-        style="bottom: 1rem; right: 1rem; z-index: 1049; width: 60px; height: 60px;"
-        data-bs-toggle="modal" data-bs-target="#actionModal">
+<button class="btn btn-primary rounded-circle position-fixed" style="bottom: 1rem; right: 1rem; z-index: 1049; width: 60px; height: 60px;" data-bs-toggle="modal" data-bs-target="#actionModal">
   <i class="bi bi-plus-lg fs-3"></i>
 </button>
 
@@ -242,7 +240,6 @@ function refreshFileList() {
       }
     });
 }
-
 setInterval(refreshFileList, 10000);
 
 
@@ -320,7 +317,6 @@ document.getElementById('renameForm').addEventListener('submit', function(e) {
 });
 
 
-
 function uploadFileWithProgress(file) {
   const formData = new FormData();
   formData.append('fileToUpload', file);
@@ -362,7 +358,7 @@ function uploadFileWithProgress(file) {
     progressBar.style.width = '100%';
     statusText.textContent = `Done in ${duration}s`;
 
-    // ✅ Refresh file list immediately after successful upload
+    // Refresh file list immediately after successful upload
     refreshFileList();
     setTimeout(() => {
   container.remove();
