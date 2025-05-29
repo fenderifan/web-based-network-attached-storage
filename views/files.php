@@ -88,7 +88,7 @@ foreach ($breadcrumbParts as $part) {
       $itemPath = $fullPath . '/' . $item;
       $itemUri = '/files' . rtrim($subPath, '/') . '/' . $item;
       $isDir = is_dir($itemPath);
-      $icon = $isDir ? 'bi-folder-fill text-warning' : 'bi-windows text-primary';
+      $icon = $isDir ? 'bi-folder-fill text-warning' : 'bi-file-earmark text-secondary';
       $size = $isDir ? '' : round(filesize($itemPath) / 1048576, 2) . ' MB';
       $type = $isDir ? 'Folder' : pathinfo($item, PATHINFO_EXTENSION);
       $dateModified = date("d/m/y H:i", filemtime($itemPath));
