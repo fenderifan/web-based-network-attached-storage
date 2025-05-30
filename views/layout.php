@@ -435,6 +435,7 @@ document.getElementById('newFolderForm').addEventListener('submit', function (e)
     .catch(err => alert("Error: " + err));
 });
 
+// Handle click on preview link
 document.querySelectorAll('.preview-link').forEach(link => {
   link.addEventListener('click', function (e) {
     const url = this.dataset.preview;
@@ -445,6 +446,13 @@ document.querySelectorAll('.preview-link').forEach(link => {
       .then(html => modalBody.innerHTML = html)
       .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
   });
+});
+
+// Reset modal content when closed
+const previewModal = document.getElementById('previewModal');
+previewModal.addEventListener('hidden.bs.modal', function () {
+  const modalBody = document.getElementById('previewModalContent');
+  modalBody.innerHTML = ''; // Clear the content when modal is closed
 });
 
 
