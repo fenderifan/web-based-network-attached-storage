@@ -226,17 +226,16 @@ function refreshFileList() {
       if (newList && newList.innerHTML !== previousHTML) {
         previousHTML = newList.innerHTML;
 
-        // Replace list without wiping modals
         currentList.innerHTML = newList.innerHTML;
 
-        // Re-bind buttons (rename, delete, etc.)
+        // Re-bind all file manager buttons
         bindFileManagerButtons();
       }
     });
 }
 setInterval(refreshFileList, 10000);
 
-
+// Upload overlay
 const overlay = document.getElementById('uploadOverlay');
 const statusDiv = document.getElementById('uploadStatus');
 
@@ -261,56 +260,7 @@ document.addEventListener('drop', e => {
   }
 });
 
-document.querySelectorAll('.rename-button').forEach(btn => {
-  btn.addEventListener('click', e => {
-    e.preventDefault();
-    const path = btn.dataset.path;
-    const name = btn.dataset.name;
-
-    const lastDot = name.lastIndexOf('.');
-    let base = name;
-    let ext = '';
-    if (lastDot !== -1 && lastDot !== 0) {
-      base = name.substring(0, lastDot);
-      ext = name.substring(lastDot + 1);
-    }
-
-    document.getElementById('oldPathInput').value = path;
-    document.getElementById('newBaseNameInput').value = base;
-    document.getElementById('newExtensionInput').value = ext;
-
-    const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
-    renameModal.show();
-  });
-});
-
-document.getElementById('renameForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-
-  const base = document.getElementById('newBaseNameInput').value.trim();
-  const ext = document.getElementById('newExtensionInput').value.trim();
-  const formData = new FormData();
-
-  const newName = ext ? `${base}.${ext}` : base;
-
-  formData.append('oldPath', document.getElementById('oldPathInput').value);
-  formData.append('newName', newName);
-
-  fetch('/update.php', {
-    method: 'POST',
-    body: formData
-  })
-  .then(res => {
-    if (res.ok) {
-      location.reload();
-    } else {
-      return res.text().then(msg => alert("Rename failed: " + msg));
-    }
-  })
-  .catch(err => alert("Error: " + err));
-});
-
-
+// Upload handler
 function uploadFileWithProgress(file) {
   const formData = new FormData();
   formData.append('fileToUpload', file);
@@ -322,7 +272,6 @@ function uploadFileWithProgress(file) {
 
   const container = document.createElement('div');
   container.className = 'mb-2';
-
   container.innerHTML = `
     <div class="fw-semibold small">${file.name}</div>
     <div class="progress mb-1" style="height: 20px;">
@@ -346,27 +295,23 @@ function uploadFileWithProgress(file) {
   });
 
   xhr.onload = () => {
-  const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-  if (xhr.status === 200) {
-    progressBar.classList.remove('progress-bar-animated');
-    progressBar.style.width = '100%';
-    statusText.textContent = `Done in ${duration}s`;
-
-    // Refresh file list immediately after successful upload
-    refreshFileList();
-    setTimeout(() => {
-  container.remove();
-  if (statusDiv.children.length === 0) {
-    statusDiv.classList.add('d-none');
-  }
-}, 5000);
-
-  } else {
-    progressBar.classList.replace('bg-success', 'bg-danger');
-    statusText.textContent = `Failed: ${xhr.responseText}`;
-  }
-};
-
+    const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+    if (xhr.status === 200) {
+      progressBar.classList.remove('progress-bar-animated');
+      progressBar.style.width = '100%';
+      statusText.textContent = `Done in ${duration}s`;
+      refreshFileList();
+      setTimeout(() => {
+        container.remove();
+        if (statusDiv.children.length === 0) {
+          statusDiv.classList.add('d-none');
+        }
+      }, 5000);
+    } else {
+      progressBar.classList.replace('bg-success', 'bg-danger');
+      statusText.textContent = `Failed: ${xhr.responseText}`;
+    }
+  };
 
   xhr.onerror = () => {
     progressBar.classList.replace('bg-success', 'bg-danger');
@@ -377,29 +322,6 @@ function uploadFileWithProgress(file) {
   xhr.send(formData);
 }
 
-document.querySelectorAll('.delete-btn').forEach(button => {
-    button.addEventListener('click', async (e) => {
-        e.preventDefault();
-
-        const filePath = button.getAttribute('data-path');
-        if (!confirm("Are you sure you want to delete this item?")) return;
-
-        try {
-            const response = await fetch('/delete.php?path=' + encodeURIComponent(filePath));
-            if (response.ok) {
-                // Refresh current page to show updated contents
-                window.location.reload();
-            } else {
-                const errorText = await response.text();
-                alert("Delete failed: " + errorText);
-            }
-        } catch (err) {
-            console.error(err);
-            alert("An error occurred during deletion.");
-        }
-    });
-});
-
 function triggerMobileUpload() {
   document.getElementById('mobileUploadInput').click();
 }
@@ -409,17 +331,12 @@ document.getElementById('mobileUploadInput').addEventListener('change', function
   if (files.length > 0) {
     files.forEach(uploadFileWithProgress);
   }
-  this.value = ''; // Reset input
+  this.value = '';
 });
 
-function showCreateFolderModal() {
-  const modal = new bootstrap.Modal(document.getElementById('newFolderModal'));
-  modal.show();
-}
-
+// Create folder
 document.getElementById('newFolderForm').addEventListener('submit', function (e) {
   e.preventDefault();
-
   const folderName = document.getElementById('folderName').value.trim();
   if (!folderName) return;
 
@@ -435,29 +352,105 @@ document.getElementById('newFolderForm').addEventListener('submit', function (e)
     .catch(err => alert("Error: " + err));
 });
 
-// Handle click on preview link
-document.querySelectorAll('.preview-link').forEach(link => {
-  link.addEventListener('click', function (e) {
-    const url = this.dataset.preview;
-    const modalBody = document.getElementById('previewModalContent');
-    modalBody.innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
-    fetch(url)
-      .then(res => res.text())
-      .then(html => modalBody.innerHTML = html)
-      .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
-  });
-});
-
-// Reset modal content when closed
+// Reset preview modal on close
 const previewModal = document.getElementById('previewModal');
 previewModal.addEventListener('hidden.bs.modal', function () {
-  const modalBody = document.getElementById('previewModalContent');
-  modalBody.innerHTML = ''; // Clear the content when modal is closed
+  document.getElementById('previewModalContent').innerHTML = '';
 });
 
+// ✅ This function binds all the interactive buttons
+function bindFileManagerButtons() {
+  // Rename
+  document.querySelectorAll('.rename-button').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      const path = btn.dataset.path;
+      const name = btn.dataset.name;
 
+      const lastDot = name.lastIndexOf('.');
+      let base = name;
+      let ext = '';
+      if (lastDot !== -1 && lastDot !== 0) {
+        base = name.substring(0, lastDot);
+        ext = name.substring(lastDot + 1);
+      }
+
+      document.getElementById('oldPathInput').value = path;
+      document.getElementById('newBaseNameInput').value = base;
+      document.getElementById('newExtensionInput').value = ext;
+
+      const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+      renameModal.show();
+    });
+  });
+
+  // Delete
+  document.querySelectorAll('.delete-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const filePath = button.getAttribute('data-path');
+      if (!confirm("Are you sure you want to delete this item?")) return;
+
+      try {
+        const response = await fetch('/delete.php?path=' + encodeURIComponent(filePath));
+        if (response.ok) {
+          refreshFileList();
+        } else {
+          const errorText = await response.text();
+          alert("Delete failed: " + errorText);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred during deletion.");
+      }
+    });
+  });
+
+  // Preview
+  document.querySelectorAll('.preview-link').forEach(link => {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      const url = this.dataset.preview;
+      const modalBody = document.getElementById('previewModalContent');
+      modalBody.innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
+      fetch(url)
+        .then(res => res.text())
+        .then(html => modalBody.innerHTML = html)
+        .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
+    });
+  });
+}
+
+// Form rename handler
+document.getElementById('renameForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const base = document.getElementById('newBaseNameInput').value.trim();
+  const ext = document.getElementById('newExtensionInput').value.trim();
+  const newName = ext ? `${base}.${ext}` : base;
+
+  const formData = new FormData();
+  formData.append('oldPath', document.getElementById('oldPathInput').value);
+  formData.append('newName', newName);
+
+  fetch('/update.php', {
+    method: 'POST',
+    body: formData
+  })
+    .then(res => {
+      if (res.ok) {
+        location.reload();
+      } else {
+        return res.text().then(msg => alert("Rename failed: " + msg));
+      }
+    })
+    .catch(err => alert("Error: " + err));
+});
+
+// Initial bind when page loads
+bindFileManagerButtons();
 </script>
 <?php endif; ?>
+
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     </body>
 </html>

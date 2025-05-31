@@ -7,7 +7,7 @@ $title = 'Not Found';
 // redirect
 $requestUri = $_SERVER['REQUEST_URI'];
 if ($requestUri === '/' || $requestUri === '/index.php') {
-    header("Location: /files");
+    include __DIR__ . '/views/main.php';
     exit;
 }
 
