@@ -62,14 +62,14 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
 
 <div class="modal-body text-center">
 <?php if (is_image($ext)): ?>
-  <img src="preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="img-fluid" alt="<?= htmlspecialchars($filename) ?>">
+  <img src="/preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="img-fluid" alt="<?= htmlspecialchars($filename) ?>">
 <?php elseif (is_video($ext)): ?>
   <video controls class="w-100">
-    <source src="preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" type="video/<?= $ext ?>">
+    <source src="/preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" type="video/<?= $ext ?>">
     Your browser does not support the video tag.
   </video>
 <?php else: ?>
   <p class="text-muted">Preview not available for this file type.</p>
-  <a href="preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="btn btn-primary" download>Download</a>
+  <a href="/preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="btn btn-primary" download>Download</a>
 <?php endif; ?>
 </div>
