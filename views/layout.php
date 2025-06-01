@@ -419,6 +419,55 @@ function bindFileManagerButtons() {
         .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
     });
   });
+
+  document.querySelectorAll('.copy-path-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      const path = btn.getAttribute('data-path');
+      const fullUrl = window.location.origin + path; // construct full URL
+
+      // Clipboard API with fallback
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullUrl).then(() => {
+          alert('Copied URL: ' + fullUrl);
+        }).catch(() => {
+          fallbackCopyTextToClipboard(fullUrl);
+        });
+      } else {
+        fallbackCopyTextToClipboard(fullUrl);
+      }
+    });
+  });
+}
+
+function fallbackCopyTextToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  // Avoid scrolling to bottom
+  textArea.style.position = "fixed";
+  textArea.style.top = 0;
+  textArea.style.left = 0;
+  textArea.style.width = "2em";
+  textArea.style.height = "2em";
+  textArea.style.padding = 0;
+  textArea.style.border = "none";
+  textArea.style.outline = "none";
+  textArea.style.boxShadow = "none";
+  textArea.style.background = "transparent";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    const successful = document.execCommand('copy');
+    alert(successful ? 'Copied URL: ' + text : 'Failed to copy');
+  } catch (err) {
+    alert('Fallback: Oops, unable to copy');
+  }
+
+  document.body.removeChild(textArea);
+
+  
 }
 
 // Form rename handler
