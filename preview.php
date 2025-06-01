@@ -44,13 +44,21 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
         'webm' => 'video/webm',
         'ogg' => 'video/ogg',
         'mov' => 'video/quicktime',
+        'pdf' => 'application/pdf',
+        'txt' => 'text/plain',
+        'zip' => 'application/zip',
+        'rar' => 'application/vnd.rar',
+        // Add more types if needed
     ];
 
-    if (isset($mimeTypes[$ext])) {
-        header('Content-Type: ' . $mimeTypes[$ext]);
-        readfile($fullPath);
-        exit;
-    }
+    $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
+
+    header('Content-Description: File Transfer');
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: attachment; filename="' . basename($fullPath) . '"');
+    header('Content-Length: ' . filesize($fullPath));
+    readfile($fullPath);
+    exit;
 }
 ?>
 

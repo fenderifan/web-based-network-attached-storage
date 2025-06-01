@@ -111,11 +111,9 @@ foreach ($breadcrumbParts as $part) {
             <i class="bi bi-three-dots-vertical"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="<?= htmlspecialchars($itemUri) ?>" download>Download</a></li>
+            <li><a class="dropdown-item" href="<?= htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri) . '&raw=1') ?>" download>Download</a></li>
             <li><a class="dropdown-item" href="#" data-path="<?= htmlspecialchars($itemUri) ?>" data-name="<?= htmlspecialchars($item) ?>">Copy path</a></li>
             <li><a class="dropdown-item rename-button" href="" data-path="<?= htmlspecialchars($itemUri) ?>" data-name="<?= htmlspecialchars($item) ?>">Rename</a></li>
-            <li><a class="dropdown-item" href="" data-path="<?= htmlspecialchars($itemUri) ?>">Cut</a></li>
-            <li><a class="dropdown-item" href="" data-path="<?= htmlspecialchars($itemUri) ?>">Copy</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item text-danger delete-btn" href="#" data-path="<?= htmlspecialchars($itemUri) ?>">Delete</a></li>
           </ul>
