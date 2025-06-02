@@ -117,7 +117,7 @@ foreach ($breadcrumbParts as $part) {
   <div class="flex-grow-1">Name</div>
   <div class="d-none d-md-block" style="width: 100px;">Type</div>
   <div class="d-none d-md-block" style="width: 140px;">Date modified</div>
-  <div style="width: 80px;">Size</div>
+  <div class="d-none d-md-block" style="width: 80px;">Size</div>
   <div style="width: 40px;"></div>
 </div>
 
@@ -158,7 +158,7 @@ foreach ($breadcrumbParts as $part) {
   <div class="d-none d-md-block text-muted small" style="width: 140px;"><?= $dateModified ?></div>
 
   <!-- Size -->
-  <div class="text-muted small" style="width: 80px;"><?= $size ?></div>
+  <div class="d-none d-md-block text-muted small" style="width: 80px;"><?= $size ?></div>
 
   <!-- Actions -->
   <div style="width: 40px;" class="text-end">

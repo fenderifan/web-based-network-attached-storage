@@ -60,8 +60,7 @@ $subPath = $subPath ?? '/';
   overflow-x: auto; /* if really needed */
 
   .truncate-custom {
-  max-width: calc(100vw - 0);
-  min-width: 0;
+  max-width: calc(100vw - 100px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -108,7 +107,7 @@ $subPath = $subPath ?? '/';
      style="height: 100vh; width: 250px;">
   <div class="d-flex flex-column px-3 pt-2">
     <h5 class="fw-bold text-dark">
-      <i class="bi bi-folder-fill text-warning fs-1"></i> File Manager
+      <i class="bi bi-folder-fill text-warning"></i> File Manager
     </h5>
     <ul class="nav nav-pills flex-column">
       <li class="nav-item"><a href="/files" class="nav-link text-dark"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
