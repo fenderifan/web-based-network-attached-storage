@@ -91,6 +91,7 @@ foreach ($breadcrumbParts as $part) {
       $icon = $isDir ? 'bi-folder-fill text-warning' : 'bi-file-earmark text-secondary';
       $size = $isDir ? '' : round(filesize($itemPath) / 1048576, 2) . ' MB';
       $type = $isDir ? 'Folder' : pathinfo($item, PATHINFO_EXTENSION);
+      $download = $isDir ? '' : '<li><a class="dropdown-item" href="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri) . '&raw=1') . '" download>Download</a></li>';
       $dateModified = date("d/m/y H:i", filemtime($itemPath));
     ?>
     <div class="list-group-item d-flex align-items-center">
@@ -111,7 +112,7 @@ foreach ($breadcrumbParts as $part) {
             <i class="bi bi-three-dots-vertical"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="<?= htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri) . '&raw=1') ?>" download>Download</a></li>
+            <?= $download ?>
             <a href="#" class="copy-path-btn dropdown-item" data-path="<?= htmlspecialchars($itemUri) ?>">Copy path</a>
             <li><a class="dropdown-item rename-button" href="" data-path="<?= htmlspecialchars($itemUri) ?>" data-name="<?= htmlspecialchars($item) ?>">Rename</a></li>
             <li><hr class="dropdown-divider"></li>
