@@ -14,6 +14,7 @@ $subPath = $subPath ?? '/';
     html, body {
   height: 100%;
   margin: 0;
+  overflow-x: hidden;
 }
 
 @media (max-width: 767.98px) {
@@ -54,6 +55,26 @@ $subPath = $subPath ?? '/';
       font-size: 1.25rem;
       line-height: 1.2;
     }
+    .col {
+  min-width: 0; /* allows flex children to shrink */
+  overflow-x: auto; /* if really needed */
+
+  .truncate-custom {
+  max-width: calc(100vw - 0);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) {
+  /* Bootstrap md breakpoint is 768px */
+  .truncate-custom {
+    max-width: calc(100vw - 750px);
+  }
+}
+
+}
 
   </style>
 </head>
@@ -81,7 +102,7 @@ $subPath = $subPath ?? '/';
   </div>
 
   <div class="container-fluid">
-    <div class="row flex-nowrap">
+    <div class="row flex-wrap">
       <!-- Sidebar for desktop -->
       <div class="col-auto col-md-3 col-xl-2 bg-light d-none d-md-block position-sticky top-0" style="height: 100vh;">
         <div class="d-flex flex-column px-3 pt-2">

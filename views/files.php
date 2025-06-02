@@ -75,12 +75,13 @@ foreach ($breadcrumbParts as $part) {
 <!-- File list -->
 <div class="list-group list-group-flush border rounded">
   <div class="list-group-item d-flex fw-bold text-muted">
-    <div class="flex-grow-1">Name</div>
-    <div style="width: 100px;">Type</div>
-    <div style="width: 140px;">Date modified</div>
-    <div style="width: 80px;">Size</div>
-    <div style="width: 40px;"></div>
-  </div>
+  <div class="flex-grow-1">Name</div>
+  <div class="d-none d-md-block" style="width: 100px;">Type</div>
+  <div class="d-none d-md-block" style="width: 140px;">Date modified</div>
+  <div style="width: 80px;">Size</div>
+  <div style="width: 40px;"></div>
+</div>
+
 
   <?php foreach ($items as $item): ?>
     <?php if ($item === '.' || $item === '..') continue; ?>
@@ -95,31 +96,47 @@ foreach ($breadcrumbParts as $part) {
       $dateModified = date("d/m/y H:i", filemtime($itemPath));
     ?>
     <div class="list-group-item d-flex align-items-center">
-      <a href="<?= $isDir ? htmlspecialchars($itemUri) : '#' ?>"
-         class="d-flex align-items-center gap-3 text-decoration-none flex-grow-1 <?= $isDir ? '' : 'preview-link' ?>"
-         <?= $isDir ? '' : 'data-bs-toggle="modal" data-bs-target="#previewModal" data-preview="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri)) . '"' ?>>
-        <i class="bi <?= $icon ?> fs-4"></i>
-        <div><?= htmlspecialchars($item) ?></div>
-      </a>
+  <!-- Name column (set max-width and truncate properly) -->
+<div class="flex-grow-1 d-flex align-items-center overflow-hidden" style="min-width: 0;">
+  <i class="bi <?= $icon ?> fs-5 me-2 flex-shrink-0"></i>
+  <a href="<?= $isDir ? htmlspecialchars($itemUri) : '#' ?>"
+     class="text-decoration-none d-flex align-items-center w-100 overflow-hidden"
+     <?= $isDir ? '' : 'data-bs-toggle="modal" data-bs-target="#previewModal" data-preview="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri)) . '"' ?>>
+     <div class="text-truncate truncate-custom" title="<?= htmlspecialchars($item) ?>">
+  <?= htmlspecialchars($item) ?>
+</div>
 
-      <div style="width: 100px;" class="text-muted small"><?= $type ?></div>
-      <div style="width: 140px;" class="text-muted small"><?= $dateModified ?></div>
-      <div style="width: 80px;" class="text-muted small"><?= $size ?></div>
 
-      <div style="width: 40px;" class="text-end">
-        <div class="dropdown">
-          <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
-            <i class="bi bi-three-dots-vertical"></i>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <?= $download ?>
-            <a href="#" class="copy-path-btn dropdown-item" data-path="<?= htmlspecialchars($itemUri) ?>">Copy path</a>
-            <li><a class="dropdown-item rename-button" href="" data-path="<?= htmlspecialchars($itemUri) ?>" data-name="<?= htmlspecialchars($item) ?>">Rename</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-danger delete-btn" href="#" data-path="<?= htmlspecialchars($itemUri) ?>">Delete</a></li>
-          </ul>
-        </div>
-      </div>
+  </a>
+</div>
+
+
+
+  <!-- Type -->
+  <div class="d-none d-md-block text-muted small" style="width: 100px;"><?= $type ?></div>
+
+  <!-- Date Modified -->
+  <div class="d-none d-md-block text-muted small" style="width: 140px;"><?= $dateModified ?></div>
+
+  <!-- Size -->
+  <div class="text-muted small" style="width: 80px;"><?= $size ?></div>
+
+  <!-- Actions -->
+  <div style="width: 40px;" class="text-end">
+    <div class="dropdown">
+      <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-three-dots-vertical"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <?= $download ?>
+        <a href="#" class="copy-path-btn dropdown-item" data-path="<?= htmlspecialchars($itemUri) ?>">Copy path</a>
+        <li><a class="dropdown-item rename-button" href="#" data-path="<?= htmlspecialchars($itemUri) ?>" data-name="<?= htmlspecialchars($item) ?>">Rename</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger delete-btn" href="#" data-path="<?= htmlspecialchars($itemUri) ?>">Delete</a></li>
+      </ul>
     </div>
+  </div>
+</div>
+
   <?php endforeach; ?>
 </div>
