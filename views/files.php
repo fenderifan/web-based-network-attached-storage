@@ -17,6 +17,45 @@ if (is_file($fullPath)) {
     exit;
 }
 
+function getIconClassAndColorForFile($filename, $isDir) {
+    if ($isDir) {
+        return ['bi-folder-fill', 'text-warning']; // Yellow folder
+    }
+
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+    $map = [
+        'jpg'  => ['bi-file-image', 'text-primary'],
+        'jpeg' => ['bi-file-image', 'text-primary'],
+        'png'  => ['bi-file-image', 'text-primary'],
+        'gif'  => ['bi-file-image', 'text-success'],
+        'svg'  => ['bi-file-image', 'text-warning'],
+        'pdf'  => ['bi-file-earmark-pdf', 'text-danger'],
+        'doc'  => ['bi-file-earmark-word', 'text-primary'],
+        'docx' => ['bi-file-earmark-word', 'text-primary'],
+        'xls'  => ['bi-file-earmark-excel', 'text-success'],
+        'xlsx' => ['bi-file-earmark-excel', 'text-success'],
+        'ppt'  => ['bi-file-earmark-powerpoint', 'text-warning'],
+        'pptx' => ['bi-file-earmark-powerpoint', 'text-warning'],
+        'txt'  => ['bi-file-earmark-text', 'text-secondary'],
+        'zip'  => ['bi-file-earmark-zip', 'text-warning'], 
+        'rar'  => ['bi-file-earmark-zip', 'text-warning'],
+        'mp3'  => ['bi-file-earmark-music', 'text-warning'],
+        'wav'  => ['bi-file-earmark-music', 'text-warning'],
+        'mp4'  => ['bi-file-earmark-play', 'text-success'],
+        'mov'  => ['bi-file-earmark-play', 'text-success'],
+        'avi'  => ['bi-file-earmark-play', 'text-success'],
+        'php'  => ['bi-file-code', 'text-secondary'], 
+        'js'   => ['bi-file-code', 'text-secondary'], 
+        'html' => ['bi-file-code', 'text-secondary'],
+        'css'  => ['bi-file-code', 'text-secondary'],
+        // add more if needed
+    ];
+
+    return $map[$ext] ?? ['bi-file-earmark-text', 'text-secondary']; // default grey icon
+}
+
+
 $items = scandir($fullPath);
 
 // Breadcrumb parts
@@ -89,7 +128,7 @@ foreach ($breadcrumbParts as $part) {
       $itemPath = $fullPath . '/' . $item;
       $itemUri = '/files' . rtrim($subPath, '/') . '/' . $item;
       $isDir = is_dir($itemPath);
-      $icon = $isDir ? 'bi-folder-fill text-warning' : 'bi-file-earmark text-secondary';
+      list($iconClass, $colorClass) = getIconClassAndColorForFile($item, $isDir);
       $size = $isDir ? '' : round(filesize($itemPath) / 1048576, 2) . ' MB';
       $type = $isDir ? 'Folder' : pathinfo($item, PATHINFO_EXTENSION);
       $download = $isDir ? '' : '<li><a class="dropdown-item" href="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri) . '&raw=1') . '" download>Download</a></li>';
@@ -98,9 +137,9 @@ foreach ($breadcrumbParts as $part) {
     <div class="list-group-item d-flex align-items-center">
   <!-- Name column (set max-width and truncate properly) -->
 <div class="flex-grow-1 d-flex align-items-center overflow-hidden" style="min-width: 0;">
-  <i class="bi <?= $icon ?> fs-5 me-2 flex-shrink-0"></i>
+  <i class="bi <?= $iconClass ?> fs-5 me-2 flex-shrink-0 <?= $colorClass ?>"></i>
   <a href="<?= $isDir ? htmlspecialchars($itemUri) : '#' ?>"
-     class="text-decoration-none d-flex align-items-center w-100 overflow-hidden"
+     class="text-decoration-none d-flex align-items-center w-100 overflow-hidden <?= $isDir ? '' : 'preview-link' ?>"
      <?= $isDir ? '' : 'data-bs-toggle="modal" data-bs-target="#previewModal" data-preview="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri)) . '"' ?>>
      <div class="text-truncate truncate-custom" title="<?= htmlspecialchars($item) ?>">
   <?= htmlspecialchars($item) ?>

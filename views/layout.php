@@ -104,15 +104,18 @@ $subPath = $subPath ?? '/';
   <div class="container-fluid">
     <div class="row flex-wrap">
       <!-- Sidebar for desktop -->
-      <div class="col-auto col-md-3 col-xl-2 bg-light d-none d-md-block position-sticky top-0" style="height: 100vh;">
-        <div class="d-flex flex-column px-3 pt-2">
-          <h5 class="fw-bold text-dark"><i class="bi bi-folder-fill text-warning fs-1"></i> File Manager</h5>
-          <ul class="nav nav-pills flex-column">
-            <li class="nav-item"><a href="/files" class="nav-link text-dark"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
-            <li class="nav-item"><a href="/settings" class="nav-link text-dark"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
-          </ul>
-        </div>
-      </div>
+      <div class="d-none d-md-block bg-light position-sticky top-0"
+     style="height: 100vh; width: 250px;">
+  <div class="d-flex flex-column px-3 pt-2">
+    <h5 class="fw-bold text-dark">
+      <i class="bi bi-folder-fill text-warning fs-1"></i> File Manager
+    </h5>
+    <ul class="nav nav-pills flex-column">
+      <li class="nav-item"><a href="/files" class="nav-link text-dark"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
+      <li class="nav-item"><a href="/settings" class="nav-link text-dark"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
+    </ul>
+  </div>
+</div>
 
       <!-- Main content -->
       <div class="col p-3">
