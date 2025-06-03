@@ -6,7 +6,8 @@ $scriptRoutes = [
     '/preview.php',
     '/upload.php',
     '/update.php',
-    '/create.php'
+    '/create.php',
+    '/delete.php'
 ];
 
 if (in_array($path, $scriptRoutes)) {
