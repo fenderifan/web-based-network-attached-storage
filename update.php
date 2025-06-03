@@ -11,7 +11,7 @@ if (!$oldPath || !$newName) {
 }
 
 // Remove '/files' prefix and decode URL
-$relativePath = ltrim(str_replace('/files', '', urldecode($oldPath)), '/');
+$relativePath = ltrim(str_replace('/files', '', rawurldecode($oldPath)), '/');
 
 // Resolve to full path
 $oldFullPath = realpath($baseDir . '/' . $relativePath);

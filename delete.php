@@ -9,7 +9,7 @@ if (!$path) {
 }
 
 // Remove '/files' prefix and decode
-$relativePath = ltrim(str_replace('/files', '', urldecode($path)), '/');
+$relativePath = ltrim(str_replace('/files', '', rawurldecode($path)), '/');
 
 // Build full path
 $fullPath = realpath($baseDir . '/' . $relativePath);

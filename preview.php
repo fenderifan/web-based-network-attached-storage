@@ -9,7 +9,7 @@ if (!$requestedPath) {
 }
 
 // Bersihkan dan ambil path relatif
-$relativePath = ltrim(str_replace('/files', '', urldecode($requestedPath)), '/');
+$relativePath = ltrim(str_replace('/files', '', rawurldecode($requestedPath)), '/');
 $fullPath = realpath($baseDir . '/' . $relativePath);
 
 // Cek keamanan dan apakah file valid

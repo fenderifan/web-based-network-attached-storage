@@ -3,8 +3,12 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 ini_set('file_uploads', '1');
-ini_set('upload_max_filesize', '10M');
-ini_set('post_max_size', '12M');
+ini_set('upload_max_filesize', '2G');
+ini_set('post_max_size', '2G');
+ini_set('memory_limit', '512M');
+ini_set('max_execution_time', 300);
+ini_set('max_input_time', 300);
+
 
 // Setup paths
 $baseDir = __DIR__ . '/files';
