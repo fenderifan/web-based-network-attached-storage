@@ -4,19 +4,24 @@ $baseDir = __DIR__;
 $view = '404';
 $title = 'Not Found';
 
-// redirect
-$requestUri = $_SERVER['REQUEST_URI'];
-if ($requestUri === '/' || $requestUri === '/index.php') {
-    include __DIR__ . '/views/main.php';
+// Direct script access for utilities
+$scriptRoutes = [
+    '/preview.php' => 'preview.php',
+    '/update.php' => 'update.php',
+    '/upload.php' => 'upload.php',
+    '/create.php' => 'create.php'
+];
+
+if (array_key_exists($uri, $scriptRoutes)) {
+    include __DIR__ . '/' . $scriptRoutes[$uri];
     exit;
 }
 
-
-// Routing
-if ($uri === '/' || $uri === '/files') {
-    $view = 'files';
-    $title = 'File Browser';
-} elseif (str_starts_with($uri, '/files/')) {
+// Main UI pages
+if ($uri === '/' || $uri === '/index.php') {
+    include __DIR__ . '/views/main.php';
+    exit;
+} elseif ($uri === '/files' || str_starts_with($uri, '/files/')) {
     $view = 'files';
     $title = 'File Browser';
 } elseif ($uri === '/settings') {
