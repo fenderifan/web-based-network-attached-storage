@@ -1,7 +1,10 @@
 <?php
 $baseDir = realpath(__DIR__ . '/files');
 
-$path = $_GET['path'] ?? '';
+// Read JSON body
+$input = json_decode(file_get_contents('php://input'), true);
+$path = $input['path'] ?? '';
+
 if (!$path) {
     http_response_code(400);
     echo "Missing file path.";
@@ -17,7 +20,7 @@ $fullPath = realpath($baseDir . '/' . $relativePath);
 // Ensure it's within allowed base directory
 if (!$fullPath || strpos($fullPath, $baseDir) !== 0) {
     http_response_code(403);
-    //echo "Access Denied.";
+    echo "Access Denied.";
     exit;
 }
 
@@ -25,7 +28,7 @@ if (!$fullPath || strpos($fullPath, $baseDir) !== 0) {
 if (is_file($fullPath)) {
     if (!unlink($fullPath)) {
         http_response_code(500);
-        //echo "File deletion failed.";
+        echo "File deletion failed.";
         exit;
     }
 } elseif (is_dir($fullPath)) {
@@ -44,13 +47,14 @@ if (is_file($fullPath)) {
 
     if (!deleteDir($fullPath)) {
         http_response_code(500);
+        echo "Failed to delete folder.";
         exit;
     }
 } else {
     http_response_code(400);
-    //echo "Invalid file/folder.";
+    echo "Invalid file/folder.";
     exit;
 }
 
 http_response_code(200);
-//echo "Deleted successfully.";
+echo "Deleted successfully.";

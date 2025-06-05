@@ -412,22 +412,44 @@ function bindFileManagerButtons() {
     button.addEventListener('click', async (e) => {
       e.preventDefault();
       const filePath = button.getAttribute('data-path');
-      if (!confirm("Are you sure you want to delete this item?")) return;
+
+      if (!filePath) {
+        alert("No file path provided.");
+        return;
+      }
+
+      const confirmed = confirm(`Are you sure you want to delete this item?\n\nPath: ${filePath}`);
+      if (!confirmed) return;
 
       try {
-        const response = await fetch('/delete.php?path=' + encodeURIComponent(filePath));
+        const response = await fetch('/delete.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ path: filePath })
+        });
+
+        const resultText = await response.text();
+
         if (response.ok) {
-          refreshFileList();
+          alert("Deleted successfully!");
+          // ✅ Try to remove item from DOM or reload list
+          if (typeof refreshFileList === 'function') {
+            refreshFileList(); // your existing refresh logic
+          } else {
+            location.reload(); // fallback
+          }
         } else {
-          const errorText = await response.text();
-          alert("Delete failed: " + errorText);
+          alert("Delete failed: " + resultText);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Fetch error:', err);
         alert("An error occurred during deletion.");
       }
     });
   });
+
 
   // Preview
   document.querySelectorAll('.preview-link').forEach(link => {

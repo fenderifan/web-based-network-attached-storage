@@ -176,6 +176,5 @@ foreach ($breadcrumbParts as $part) {
     </div>
   </div>
 </div>
-
   <?php endforeach; ?>
 </div>

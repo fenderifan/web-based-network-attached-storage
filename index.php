@@ -9,7 +9,9 @@ $scriptRoutes = [
     '/preview.php' => 'preview.php',
     '/update.php' => 'update.php',
     '/upload.php' => 'upload.php',
-    '/create.php' => 'create.php'
+    '/create.php' => 'create.php',
+    '/delete.php' => 'delete.php'
+
 ];
 
 if (array_key_exists($uri, $scriptRoutes)) {
