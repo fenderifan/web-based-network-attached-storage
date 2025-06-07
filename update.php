@@ -23,29 +23,20 @@ if (!$oldFullPath || strpos($oldFullPath, $baseDir) !== 0) {
 }
 
 $folderPath = dirname($oldFullPath);
-$extension = pathinfo($oldFullPath, PATHINFO_EXTENSION);
-
-// Append extension if missing in new name
-if (!pathinfo($newName, PATHINFO_EXTENSION)) {
-    $newName .= '.' . $extension;
-}
-
-
 $newFullPath = $folderPath . '/' . basename($newName);
 
 // If new path is same as old, skip renaming
-if (realpath($oldFullPath) === realpath($newFullPath)) {
+if ($oldFullPath === $newFullPath) {
     http_response_code(200);
     echo "Name unchanged.";
     exit;
 }
 
 // Avoid overwriting existing files
-$counter = 1;
-$originalName = pathinfo($newFullPath, PATHINFO_FILENAME);
-while (file_exists($newFullPath)) {
-    $newFullPath = $folderPath . '/' . $originalName . " ($counter)" . ($extension ? ".$extension" : '');
-    $counter++;
+if (file_exists($newFullPath)) {
+    http_response_code(409); // Conflict
+    echo "A file with that name already exists.";
+    exit;
 }
 
 // Attempt rename

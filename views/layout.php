@@ -74,7 +74,17 @@ $subPath = $subPath ?? '/';
 }
 
 }
-
+@media (max-width: 767.98px) {
+  #uploadContainer {
+    width: 100% !important;      /* Override inline style to be full width */
+    margin: 0 !important;         /* Override .m-3 class */
+    left: 0 !important;           /* Ensure it starts from the left edge */
+    right: 0 !important;          /* Ensure it goes to the right edge */
+    border-radius: 0 !important;  /* Remove rounded corners */
+    border-left: none !important; /* Remove side borders to blend */
+    border-right: none !important;
+  }
+}
   </style>
 </head>
 <body>
@@ -136,9 +146,21 @@ $subPath = $subPath ?? '/';
         <p class="fw-semibold mt-2 fs-5">Drop files to upload</p>
       </div>
     </div>
-    
-    <div id="uploadStatus" class="d-none position-fixed bottom-0 end-0 m-3 p-2 bg-white rounded shadow" style="z-index: 1100; max-width: 300px; overflow-y: auto; max-height: 50vh;">
+
+    <!-- Upload Status -->
+<div id="uploadContainer" class="upload-container position-fixed bottom-0 end-0 m-3 shadow rounded border" style="width: 380px; z-index: 1050; display: none;">
+    <div class="upload-header d-flex justify-content-between align-items-center p-2 border-bottom bg-white">
+        <h6 class="mb-0 ms-2">Uploading... (<span id="uploadCount">0</span>)</h6>
+        <div>
+            <button type="button" id="toggleUploads" class="btn btn-sm btn-icon">
+                <i class="bi-chevron-up"></i>
+            </button>
+        </div>
     </div>
+    <div id="uploadBody" class="upload-body p-2 bg-light" style="max-height: 300px; overflow-y: auto;">
+        </div>
+</div>
+
 <!-- Rename Modal -->
 <div class="modal fade" id="renameModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -176,10 +198,10 @@ $subPath = $subPath ?? '/';
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body d-grid gap-2">
-        <button class="btn btn-outline-primary" onclick="triggerMobileUpload()" data-bs-dismiss="modal">
+        <button class="btn btn-outline-primary" onclick="document.getElementById('mobileUploadInput').click()">
           <i class="bi bi-upload me-2"></i> Upload File
         </button>
-        <button class="btn btn-outline-secondary" onclick="showCreateFolderModal()" data-bs-dismiss="modal">
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newFolderModal">
           <i class="bi bi-folder-plus me-2"></i> New Folder
         </button>
       </div>
@@ -225,323 +247,348 @@ $subPath = $subPath ?? '/';
 
 <?php if (strpos($_SERVER['REQUEST_URI'], '/files') === 0): ?>
 <script>
-let previousHTML = '';
-let isEditing = false;
+document.addEventListener('DOMContentLoaded', () => {
 
-document.addEventListener('focusin', e => {
-  if (e.target.closest('.modal')) isEditing = true;
-});
+    // --- Start: New Uploader Variables and Logic ---
+    const uploadContainer = document.getElementById('uploadContainer');
+    const uploadBody = document.getElementById('uploadBody');
+    const uploadHeader = document.getElementById('uploadHeader');
+    const toggleBtn = document.getElementById('toggleUploads');
+    const closeBtn = document.getElementById('closeUploads');
+    const uploadCountSpan = document.getElementById('uploadCount');
+    const toggleIcon = toggleBtn.querySelector('i');
+    let activeUploads = 0;
 
-document.addEventListener('focusout', e => {
-  if (e.target.closest('.modal')) isEditing = false;
-});
-
-function refreshFileList() {
-  if (isEditing) return;
-  fetch(window.location.href)
-    .then(res => res.text())
-    .then(html => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const newList = doc.querySelector('.list-group');
-      const currentList = document.querySelector('.list-group');
-
-      if (newList && newList.innerHTML !== previousHTML) {
-        previousHTML = newList.innerHTML;
-
-        currentList.innerHTML = newList.innerHTML;
-
-        // Re-bind all file manager buttons
-        bindFileManagerButtons();
-      }
-    });
-}
-setInterval(refreshFileList, 10000);
-
-// Upload overlay
-const overlay = document.getElementById('uploadOverlay');
-const statusDiv = document.getElementById('uploadStatus');
-
-document.addEventListener('dragover', e => {
-  e.preventDefault();
-  overlay.classList.remove('d-none');
-});
-
-document.addEventListener('dragleave', e => {
-  if (e.clientY <= 0 || e.clientX <= 0) {
-    overlay.classList.add('d-none');
-  }
-});
-
-document.addEventListener('drop', e => {
-  e.preventDefault();
-  overlay.classList.add('d-none');
-
-  const files = Array.from(e.dataTransfer.files);
-  if (files.length > 0) {
-    files.forEach(uploadFileWithProgress);
-  }
-});
-
-// Upload handler
-function uploadFileWithProgress(file) {
-  const formData = new FormData();
-  formData.append('fileToUpload', file);
-  formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
-
-  const startTime = performance.now();
-
-  statusDiv.classList.remove('d-none');
-
-  const container = document.createElement('div');
-  container.className = 'mb-2';
-  container.innerHTML = `
-    <div class="fw-semibold small">${file.name}</div>
-    <div class="progress mb-1" style="height: 20px;">
-      <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
-    </div>
-    <div class="small text-muted">Starting...</div>
-  `;
-
-  const progressBar = container.querySelector('.progress-bar');
-  const statusText = container.querySelector('.text-muted');
-  statusDiv.appendChild(container);
-
-  const xhr = new XMLHttpRequest();
-
-  xhr.upload.addEventListener('progress', e => {
-    if (e.lengthComputable) {
-      const percent = (e.loaded / e.total) * 100;
-      progressBar.style.width = `${percent.toFixed(1)}%`;
-      statusText.textContent = `Uploading... ${Math.round(percent)}%`;
-    }
-  });
-
-  xhr.onload = () => {
-    const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-    if (xhr.status === 200) {
-      progressBar.classList.remove('progress-bar-animated');
-      progressBar.style.width = '100%';
-      statusText.textContent = `Done in ${duration}s`;
-      refreshFileList();
-      setTimeout(() => {
-        container.remove();
-        if (statusDiv.children.length === 0) {
-          statusDiv.classList.add('d-none');
+    function updateUploadCount() {
+        if (uploadCountSpan) {
+            uploadCountSpan.textContent = activeUploads;
         }
-      }, 5000);
-    } else {
-      progressBar.classList.replace('bg-success', 'bg-danger');
-      statusText.textContent = `Failed: ${xhr.responseText}`;
     }
-  };
 
-  xhr.onerror = () => {
-    progressBar.classList.replace('bg-success', 'bg-danger');
-    statusText.textContent = 'Upload error.';
-  };
-
-  xhr.open('POST', '/upload.php');
-  xhr.send(formData);
-}
-
-function triggerMobileUpload() {
-  document.getElementById('mobileUploadInput').click();
-}
-
-document.getElementById('mobileUploadInput').addEventListener('change', function () {
-  const files = Array.from(this.files);
-  if (files.length > 0) {
-    files.forEach(uploadFileWithProgress);
-  }
-  this.value = '';
-});
-
-// Create folder
-document.getElementById('newFolderForm').addEventListener('submit', function (e) {
-  e.preventDefault();
-  const folderName = document.getElementById('folderName').value.trim();
-  if (!folderName) return;
-
-  const formData = new FormData();
-  formData.append('folderName', folderName);
-  formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
-
-  fetch('/create.php', {
-    method: 'POST',
-    body: formData
-  })
-    .then(res => res.ok ? location.reload() : res.text().then(alert))
-    .catch(err => alert("Error: " + err));
-});
-
-// Reset preview modal on close
-const previewModal = document.getElementById('previewModal');
-previewModal.addEventListener('hidden.bs.modal', function () {
-  document.getElementById('previewModalContent').innerHTML = '';
-});
-
-// ✅ This function binds all the interactive buttons
-function bindFileManagerButtons() {
-  // Rename
-  document.querySelectorAll('.rename-button').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.preventDefault();
-      const path = btn.dataset.path;
-      const name = btn.dataset.name;
-
-      const lastDot = name.lastIndexOf('.');
-      let base = name;
-      let ext = '';
-      if (lastDot !== -1 && lastDot !== 0) {
-        base = name.substring(0, lastDot);
-        ext = name.substring(lastDot + 1);
-      }
-
-      document.getElementById('oldPathInput').value = path;
-      document.getElementById('newBaseNameInput').value = base;
-      document.getElementById('newExtensionInput').value = ext;
-
-      const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
-      renameModal.show();
-    });
-  });
-
-  // Delete
-  document.querySelectorAll('.delete-btn').forEach(button => {
-    button.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const filePath = button.getAttribute('data-path');
-
-      if (!filePath) {
-        alert("No file path provided.");
-        return;
-      }
-
-      const confirmed = confirm(`Are you sure you want to delete this item?\n\nPath: ${filePath}`);
-      if (!confirmed) return;
-
-      try {
-        const response = await fetch('/delete.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ path: filePath })
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            const isCollapsed = uploadBody.style.display === 'none';
+            uploadBody.style.display = isCollapsed ? 'block' : 'none';
+            toggleIcon.classList.toggle('bi-chevron-up', isCollapsed);
+            toggleIcon.classList.toggle('bi-chevron-down', !isCollapsed);
         });
+    }
 
-        const resultText = await response.text();
+    if (uploadHeader) {
+        uploadHeader.addEventListener('click', () => {
+            toggleBtn.click();
+        });
+    }
+    // --- End: New Uploader Logic ---
 
-        if (response.ok) {
-          alert("Deleted successfully!");
-          // ✅ Try to remove item from DOM or reload list
-          if (typeof refreshFileList === 'function') {
-            refreshFileList(); // your existing refresh logic
-          } else {
-            location.reload(); // fallback
-          }
-        } else {
-          alert("Delete failed: " + resultText);
-        }
-      } catch (err) {
-        console.error('Fetch error:', err);
-        alert("An error occurred during deletion.");
-      }
+
+    let previousHTML = '';
+    let isEditing = false;
+
+    document.addEventListener('focusin', e => {
+        if (e.target.closest('.modal')) isEditing = true;
     });
-  });
 
+    document.addEventListener('focusout', e => {
+        if (e.target.closest('.modal')) isEditing = false;
+    });
 
-  // Preview
-  document.querySelectorAll('.preview-link').forEach(link => {
-    link.addEventListener('click', function (e) {
-      e.preventDefault();
-      const url = this.dataset.preview;
-      const modalBody = document.getElementById('previewModalContent');
-      modalBody.innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
-      fetch(url)
+    function refreshFileList(force = false) {
+    if (isEditing && !force) return; // This line is changed
+    fetch(window.location.href)
         .then(res => res.text())
-        .then(html => modalBody.innerHTML = html)
-        .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
-    });
-  });
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newList = doc.querySelector('.list-group');
+            const currentList = document.querySelector('.list-group');
 
-  document.querySelectorAll('.copy-path-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.preventDefault();
-      const path = btn.getAttribute('data-path');
-      const fullUrl = window.location.origin + path; // construct full URL
-
-      // Clipboard API with fallback
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(fullUrl).then(() => {
-          alert('Copied URL: ' + fullUrl);
-        }).catch(() => {
-          fallbackCopyTextToClipboard(fullUrl);
+            if (newList && currentList && newList.innerHTML !== previousHTML) {
+                previousHTML = newList.innerHTML;
+                currentList.innerHTML = newList.innerHTML;
+                bindFileManagerButtons();
+            }
         });
-      } else {
-        fallbackCopyTextToClipboard(fullUrl);
-      }
+}
+    setInterval(refreshFileList, 10000);
+
+    const overlay = document.getElementById('uploadOverlay');
+    document.addEventListener('dragover', e => {
+        e.preventDefault();
+        overlay.classList.remove('d-none');
     });
-  });
-}
 
-function fallbackCopyTextToClipboard(text) {
-  const textArea = document.createElement("textarea");
-  textArea.value = text;
-  // Avoid scrolling to bottom
-  textArea.style.position = "fixed";
-  textArea.style.top = 0;
-  textArea.style.left = 0;
-  textArea.style.width = "2em";
-  textArea.style.height = "2em";
-  textArea.style.padding = 0;
-  textArea.style.border = "none";
-  textArea.style.outline = "none";
-  textArea.style.boxShadow = "none";
-  textArea.style.background = "transparent";
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
+    document.addEventListener('dragleave', e => {
+        if (e.relatedTarget === null || e.relatedTarget.closest('#uploadOverlay') === null) {
+            overlay.classList.add('d-none');
+        }
+    });
 
-  try {
-    const successful = document.execCommand('copy');
-    alert(successful ? 'Copied URL: ' + text : 'Failed to copy');
-  } catch (err) {
-    alert('Fallback: Oops, unable to copy');
-  }
+    document.addEventListener('drop', e => {
+        e.preventDefault();
+        overlay.classList.add('d-none');
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            files.forEach(uploadFileWithProgress);
+        }
+    });
+    
+    // MODIFIED uploadFileWithProgress function
+    function uploadFileWithProgress(file) {
+        activeUploads++;
+        updateUploadCount();
+        uploadContainer.style.display = 'block';
 
-  document.body.removeChild(textArea);
+        const formData = new FormData();
+        formData.append('fileToUpload', file);
+        formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
 
-  
-}
+        const startTime = performance.now();
+        const fileExt = (file.name.split('.').pop() || 'FILE').toUpperCase().substring(0, 4);
 
-// Form rename handler
-document.getElementById('renameForm').addEventListener('submit', function (e) {
-  e.preventDefault();
-  const base = document.getElementById('newBaseNameInput').value.trim();
-  const ext = document.getElementById('newExtensionInput').value.trim();
-  const newName = ext ? `${base}.${ext}` : base;
+        const container = document.createElement('div');
+        // Using bootstrap classes for the item itself
+        container.className = 'p-2 mb-2 border rounded bg-white'; 
 
-  const formData = new FormData();
-  formData.append('oldPath', document.getElementById('oldPathInput').value);
-  formData.append('newName', newName);
+        container.innerHTML = `
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0 me-2">
+              <div class="d-flex align-items-center justify-content-center bg-body-tertiary text-secondary fw-bold rounded" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                ${fileExt}
+              </div>
+            </div>
+            <div class="flex-grow-1" style="min-width: 0;">
+              <div class="fw-semibold small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">
+                ${file.name}
+              </div>
+              <div class="progress mt-1" style="height: 5px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+              </div>
+              <div class="d-flex justify-content-between small text-muted mt-1">
+                <div class="upload-status" style="font-size: 0.75rem;">Starting...</div>
+                <div class="upload-meta text-end" style="font-size: 0.75rem;"></div>
+              </div>
+            </div>
+          </div>
+        `;
 
-  fetch('/update.php', {
-    method: 'POST',
-    body: formData
-  })
-    .then(res => {
-      if (res.ok) {
-        location.reload();
-      } else {
-        return res.text().then(msg => alert("Rename failed: " + msg));
-      }
-    })
-    .catch(err => alert("Error: " + err));
+        // Append to the NEW upload body
+        uploadBody.appendChild(container);
+
+        const progressBar = container.querySelector('.progress-bar');
+        const statusText = container.querySelector('.upload-status');
+        const metaText = container.querySelector('.upload-meta');
+        
+        let lastLoaded = 0;
+        let lastTime = performance.now();
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', e => {
+            if (e.lengthComputable) {
+                const now = performance.now();
+                const deltaElapsed = (now - lastTime) / 1000 || 1;
+                const deltaLoaded = e.loaded - lastLoaded;
+                const speedBps = deltaLoaded / deltaElapsed;
+                const speedMBps = speedBps / (1024 * 1024);
+                const remainingBytes = e.total - e.loaded;
+                const etaSeconds = speedBps > 0 ? remainingBytes / speedBps : 0;
+                const percent = (e.loaded / e.total) * 100;
+
+                progressBar.style.width = `${percent}%`;
+                statusText.textContent = `${speedMBps.toFixed(2)} MB/s`;
+                metaText.textContent = `${Math.round(etaSeconds)}s left`;
+                lastLoaded = e.loaded;
+                lastTime = now;
+            }
+        });
+
+        xhr.onload = () => {
+            const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+            progressBar.classList.remove('progress-bar-animated');
+
+            if (xhr.status === 200) {
+                progressBar.classList.replace('bg-primary', 'bg-success');
+                statusText.textContent = `Completed in ${duration}s`;
+                metaText.textContent = `(${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+                refreshFileList(true);
+
+                setTimeout(() => {
+                    container.remove();
+                    activeUploads--;
+                    updateUploadCount();
+                    if (activeUploads === 0) {
+                        uploadContainer.style.display = 'none';
+                    }
+                }, 5000);
+            } else {
+                progressBar.classList.replace('bg-primary', 'bg-danger');
+                statusText.textContent = 'Upload failed';
+                metaText.textContent = xhr.statusText || 'Server Error';
+            }
+        };
+
+        xhr.onerror = () => {
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.classList.replace('bg-primary', 'bg-danger');
+            statusText.textContent = 'Network Error';
+            metaText.textContent = '';
+        };
+
+        xhr.open('POST', '/upload.php');
+        xhr.send(formData);
+    }
+
+    function triggerMobileUpload() {
+        document.getElementById('mobileUploadInput').click();
+    }
+
+    document.getElementById('mobileUploadInput').addEventListener('change', function() {
+        const files = Array.from(this.files);
+        if (files.length > 0) {
+            files.forEach(uploadFileWithProgress);
+        }
+        this.value = '';
+    });
+    
+    // --- All your other functions (create folder, modals, bind buttons, etc.) ---
+    
+    document.getElementById('newFolderForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const folderName = document.getElementById('folderName').value.trim();
+      if (!folderName) return;
+
+      const formData = new FormData();
+      formData.append('folderName', folderName);
+      formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
+
+      fetch('/create.php', { method: 'POST', body: formData })
+        .then(res => res.ok ? refreshFileList(true) : res.text().then(alert))
+        .catch(err => alert("Error: " + err));
+      
+      const modal = bootstrap.Modal.getInstance(document.getElementById('newFolderModal'));
+      modal.hide();
+    });
+
+    const previewModal = document.getElementById('previewModal');
+    previewModal.addEventListener('hidden.bs.modal', function () {
+      document.getElementById('previewModalContent').innerHTML = '';
+    });
+
+    function bindFileManagerButtons() {
+        document.querySelectorAll('.rename-button').forEach(btn => {
+          btn.addEventListener('click', e => {
+              e.preventDefault();
+              const path = btn.dataset.path;
+              const name = btn.dataset.name;
+              const isDir = btn.closest('.list-group-item').querySelector('.bi-folder-fill') !== null;
+              
+              document.getElementById('oldPathInput').value = path;
+              const newBaseNameInput = document.getElementById('newBaseNameInput');
+              const newExtensionInput = document.getElementById('newExtensionInput');
+              const extensionGroup = newExtensionInput.closest('.mb-3');
+
+              if (isDir) {
+                  newBaseNameInput.value = name;
+                  newExtensionInput.value = '';
+                  extensionGroup.style.display = 'none';
+              } else {
+                  const lastDot = name.lastIndexOf('.');
+                  if (lastDot !== -1 && lastDot !== 0) {
+                      newBaseNameInput.value = name.substring(0, lastDot);
+                      newExtensionInput.value = name.substring(lastDot + 1);
+                  } else {
+                      newBaseNameInput.value = name;
+                      newExtensionInput.value = '';
+                  }
+                  extensionGroup.style.display = 'block';
+              }
+
+              const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+              renameModal.show();
+          });
+      });
+
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const filePath = button.getAttribute('data-path');
+                if (!filePath) return alert("No file path provided.");
+                if (!confirm(`Are you sure you want to delete this item?\n\nPath: ${filePath}`)) return;
+
+                try {
+                    const response = await fetch('/delete.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: filePath })
+                    });
+                    const resultText = await response.text();
+                    if (response.ok) {
+                        refreshFileList(true);
+                    } else {
+                        alert("Delete failed: " + resultText);
+                    }
+                } catch (err) {
+                    alert("An error occurred during deletion.");
+                }
+            });
+        });
+
+        document.querySelectorAll('.preview-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.dataset.preview;
+                const modalBody = document.getElementById('previewModalContent');
+                modalBody.innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
+                fetch(url)
+                    .then(res => res.text())
+                    .then(html => modalBody.innerHTML = html)
+                    .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
+            });
+        });
+
+        document.querySelectorAll('.copy-path-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.preventDefault();
+                const path = btn.getAttribute('data-path');
+                const fullUrl = window.location.origin + path;
+                navigator.clipboard.writeText(fullUrl).then(() => alert('Copied URL: ' + fullUrl));
+            });
+        });
+    }
+
+    document.getElementById('renameForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const base = document.getElementById('newBaseNameInput').value.trim();
+    const ext = document.getElementById('newExtensionInput').value.trim();
+    const isDir = document.getElementById('newExtensionInput').closest('.mb-3').style.display === 'none';
+
+    let newName = base;
+    if (!isDir && ext) {
+        newName = `${base}.${ext}`;
+    }
+
+    const formData = new FormData(this);
+    formData.set('newName', newName);
+
+    fetch('/update.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => {
+            if (res.ok) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('renameModal'));
+                modal.hide();
+                refreshFileList(true);
+            } else {
+                return res.text().then(msg => alert("Rename failed: " + msg));
+            }
+        })
+        .catch(err => alert("Error: " + err));
 });
 
-// Initial bind when page loads
-bindFileManagerButtons();
+    bindFileManagerButtons();
+});
 </script>
 <?php endif; ?>
 
