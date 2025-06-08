@@ -27,6 +27,10 @@ $subPath = $subPath ?? '/';
     overflow-y: auto;
     height: calc(100vh - 56px); /* mobile navbar height */
   }
+
+  body.upload-active .container-fluid {
+    padding-bottom: 50px; 
+  }
 }
 
 @media (min-width: 768px) {
@@ -340,9 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     activeUploads++;
     updateUploadCount();
     uploadContainer.style.display = 'block';
-    if (window.innerWidth < 768 && fileListContainer) {
-        fileListContainer.style.paddingBottom = '35px';
-    }
+    document.body.classList.add('upload-active');
     const chunkSize = 5 * 1024 * 1024; // 5MB chunks
     const totalChunks = Math.ceil(file.size / chunkSize);
     let chunkNumber = 0;
@@ -439,9 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         activeUploads--;
                         updateUploadCount();
                         if (activeUploads === 0) {
-                          if (fileListContainer) {
-                              fileListContainer.style.paddingBottom = '';
-                          }
+                          document.body.classList.remove('upload-active');
                           uploadContainer.style.display = 'none';
                         }
                     }, 5000);
