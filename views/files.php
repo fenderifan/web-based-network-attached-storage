@@ -72,7 +72,6 @@ foreach ($breadcrumbParts as $part) {
 }
 ?>
 
-<!-- Breadcrumb navigation + button -->
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div class="d-flex align-items-center flex-wrap gap-2">
     <a href="/files" class="text-decoration-none fw-bold">Files</a>
@@ -107,11 +106,9 @@ foreach ($breadcrumbParts as $part) {
       <?php endforeach; ?>
     <?php endif; ?>
   </div>
-  <!-- Right-aligned custom button -->
   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#actionModal">Upload or Create</button>
 </div>
 
-<!-- File list -->
 <div class="list-group list-group-flush border rounded">
   <div class="list-group-item d-flex fw-bold text-muted">
   <div class="flex-grow-1">Name</div>
@@ -123,7 +120,7 @@ foreach ($breadcrumbParts as $part) {
 
 
   <?php foreach ($items as $item): ?>
-    <?php if ($item === '.' || $item === '..') continue; ?>
+    <?php if ($item === '.' || $item === '..' || $item === '.tmp') continue; // MODIFIED LINE ?>
     <?php
       $itemPath = $fullPath . '/' . $item;
       $itemUri = '/files' . rtrim($subPath, '/') . '/' . $item;
@@ -135,8 +132,7 @@ foreach ($breadcrumbParts as $part) {
       $dateModified = date("d/m/y H:i", filemtime($itemPath));
     ?>
     <div class="list-group-item d-flex align-items-center">
-  <!-- Name column (set max-width and truncate properly) -->
-<div class="flex-grow-1 d-flex align-items-center overflow-hidden" style="min-width: 0;">
+  <div class="flex-grow-1 d-flex align-items-center overflow-hidden" style="min-width: 0;">
   <i class="bi <?= $iconClass ?> fs-5 me-2 flex-shrink-0 <?= $colorClass ?>"></i>
   <a href="<?= $isDir ? htmlspecialchars($itemUri) : '#' ?>"
      class="text-decoration-none d-flex align-items-center w-100 overflow-hidden <?= $isDir ? '' : 'preview-link' ?>"
@@ -151,16 +147,12 @@ foreach ($breadcrumbParts as $part) {
 
 
 
-  <!-- Type -->
   <div class="d-none d-md-block text-muted small" style="width: 100px;"><?= $type ?></div>
 
-  <!-- Date Modified -->
   <div class="d-none d-md-block text-muted small" style="width: 140px;"><?= $dateModified ?></div>
 
-  <!-- Size -->
   <div class="d-none d-md-block text-muted small" style="width: 80px;"><?= $size ?></div>
 
-  <!-- Actions -->
   <div style="width: 40px;" class="text-end">
     <div class="dropdown">
       <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">

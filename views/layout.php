@@ -257,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.getElementById('closeUploads');
     const uploadCountSpan = document.getElementById('uploadCount');
     const toggleIcon = toggleBtn.querySelector('i');
+    const fileListContainer = document.querySelector('.list-group');
     let activeUploads = 0;
 
     function updateUploadCount() {
@@ -339,7 +340,9 @@ document.addEventListener('DOMContentLoaded', () => {
     activeUploads++;
     updateUploadCount();
     uploadContainer.style.display = 'block';
-
+    if (window.innerWidth < 768 && fileListContainer) {
+        fileListContainer.style.paddingBottom = '35px';
+    }
     const chunkSize = 5 * 1024 * 1024; // 5MB chunks
     const totalChunks = Math.ceil(file.size / chunkSize);
     let chunkNumber = 0;
@@ -436,7 +439,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         activeUploads--;
                         updateUploadCount();
                         if (activeUploads === 0) {
-                            uploadContainer.style.display = 'none';
+                          if (fileListContainer) {
+                              fileListContainer.style.paddingBottom = '';
+                          }
+                          uploadContainer.style.display = 'none';
                         }
                     }, 5000);
                 } else {
