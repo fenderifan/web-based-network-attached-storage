@@ -17,17 +17,14 @@ $subPath = $subPath ?? '/';
   overflow-x: hidden;
 }
 
+.modal-title {
+      max-width: calc(100% - 40px); /* Leave space for the close button */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
 @media (max-width: 767.98px) {
-  html, body {
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  .container-fluid {
-    overflow-y: auto;
-    height: calc(100vh - 56px); /* mobile navbar height */
-  }
-
   body.upload-active .container-fluid {
     padding-bottom: 50px; 
   }
@@ -89,6 +86,11 @@ $subPath = $subPath ?? '/';
     border-right: none !important;
   }
 }
+#previewModal .modal-body img,
+    #previewModal .modal-body video {
+        max-height: calc(100vh - 206px);
+        object-fit: contain;
+    }
   </style>
 </head>
 <body>
@@ -116,7 +118,6 @@ $subPath = $subPath ?? '/';
 
   <div class="container-fluid">
     <div class="row flex-wrap">
-      <!-- Sidebar for desktop -->
       <div class="d-none d-md-block bg-light position-sticky top-0"
      style="height: 100vh; width: 250px;">
   <div class="d-flex flex-column px-3 pt-2">
@@ -130,7 +131,6 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
-      <!-- Main content -->
       <div class="col p-3">
         <?php
         $viewFile = __DIR__ . '/' . $view . '.php';
@@ -143,7 +143,6 @@ $subPath = $subPath ?? '/';
       </div>
     </div>
   </div>
-    <!-- Drag Overlay -->
     <div id="uploadOverlay"class="position-fixed top-0 start-0 w-100 h-100 d-none"style="z-index: 1050; backdrop-filter: blur(6px); background-color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center;">
       <div class="text-center">
         <i class="bi bi-cloud-upload-fill fs-1 text-primary" style="font-size: 4rem;"></i>
@@ -151,8 +150,7 @@ $subPath = $subPath ?? '/';
       </div>
     </div>
 
-    <!-- Upload Status -->
-<div id="uploadContainer" class="upload-container position-fixed bottom-0 end-0 m-3 shadow rounded border" style="width: 380px; z-index: 1050; display: none;">
+    <div id="uploadContainer" class="upload-container position-fixed bottom-0 end-0 m-3 shadow rounded border" style="width: 380px; z-index: 1050; display: none;">
     <div class="upload-header d-flex justify-content-between align-items-center p-2 border-bottom bg-white">
         <h6 class="mb-0 ms-2">Uploading... (<span id="uploadCount">0</span>)</h6>
         <div>
@@ -165,7 +163,6 @@ $subPath = $subPath ?? '/';
         </div>
 </div>
 
-<!-- Rename Modal -->
 <div class="modal fade" id="renameModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -193,7 +190,6 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
-<!-- Modal for mobile actions -->
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -213,10 +209,8 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
-<!-- Hidden file input for upload -->
 <input type="file" id="mobileUploadInput" class="d-none" multiple />
 
-<!-- New Folder Modal -->
 <div class="modal fade" id="newFolderModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -239,9 +233,8 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
-<!-- Preview Modal -->
 <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content" id="previewModalContent">
       <div class="modal-body text-center p-5 text-muted">Loading...</div>
     </div>
