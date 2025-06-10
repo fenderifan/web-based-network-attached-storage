@@ -36,7 +36,30 @@ function load_settings() {
  * @return bool True on success, false on failure.
  */
 function save_settings($settings) {
-    return file_put_contents(CONFIG_PATH, json_encode($settings, JSON_PRETTY_PRINT)) !== false;
+    // First, ensure the file exists and is writable.
+    // If it doesn't exist, this will try to create it.
+    if (!file_exists(CONFIG_PATH)) {
+        // Attempt to create the file by opening it in write mode.
+        $handle = @fopen(CONFIG_PATH, 'w');
+        if ($handle === false) {
+            // Failed to create the file, likely a directory permission issue.
+            return false;
+        }
+        fclose($handle);
+    }
+
+    // Ensure the file is writable by the script's user.
+    // This is a good check even if the file exists.
+    if (!is_writable(CONFIG_PATH)) {
+        // Attempt to make it writable. This may fail on some systems
+        // but is worth trying.
+        @chmod(CONFIG_PATH, 0664);
+    }
+
+    // Now, attempt to write the content.
+    $result = @file_put_contents(CONFIG_PATH, json_encode($settings, JSON_PRETTY_PRINT));
+
+    return $result !== false;
 }
 
 ?>
