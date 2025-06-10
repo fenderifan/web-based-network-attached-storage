@@ -263,15 +263,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadBody = document.getElementById('uploadBody');
     const uploadHeader = document.getElementById('uploadHeader');
     const toggleBtn = document.getElementById('toggleUploads');
-    const closeBtn = document.getElementById('closeUploads');
     const uploadCountSpan = document.getElementById('uploadCount');
     const toggleIcon = toggleBtn.querySelector('i');
-    const fileListContainer = document.querySelector('.list-group');
     let activeUploads = 0;
 
     function updateUploadCount() {
         if (uploadCountSpan) {
             uploadCountSpan.textContent = activeUploads;
+        }
+    }
+    
+    /**
+     * NEW: JavaScript function to format bytes into KB, MB, GB, etc.
+     * This mirrors the logic from your PHP function for consistency.
+     */
+    function formatSize(bytes) {
+        if (bytes >= 1073741824) {
+            return (bytes / 1073741824).toFixed(1).replace('.', ',') + ' GB';
+        } else if (bytes >= 1048576) {
+            return (bytes / 1048576).toFixed(1).replace('.', ',') + ' MB';
+        } else if (bytes >= 1024) {
+            return (bytes / 1024).toFixed(1).replace('.', ',') + ' KB';
+        } else if (bytes > 0) {
+            return bytes + ' B';
+        } else {
+            return '0 B';
         }
     }
 
@@ -305,22 +321,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function refreshFileList(force = false) {
-    if (isEditing && !force) return; // This line is changed
-    fetch(window.location.href)
-        .then(res => res.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newList = doc.querySelector('.list-group');
-            const currentList = document.querySelector('.list-group');
+        if (isEditing && !force) return;
+        fetch(window.location.href)
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newList = doc.querySelector('.list-group');
+                const currentList = document.querySelector('.list-group');
 
-            if (newList && currentList && newList.innerHTML !== previousHTML) {
-                previousHTML = newList.innerHTML;
-                currentList.innerHTML = newList.innerHTML;
-                bindFileManagerButtons();
-            }
-        });
-}
+                if (newList && currentList && newList.innerHTML !== previousHTML) {
+                    previousHTML = newList.innerHTML;
+                    currentList.innerHTML = newList.innerHTML;
+                    bindFileManagerButtons();
+                }
+            });
+    }
     setInterval(refreshFileList, 10000);
 
     const overlay = document.getElementById('uploadOverlay');
@@ -344,139 +360,141 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // MODIFIED uploadFileWithProgress function
+    /**
+     * MODIFIED: uploadFileWithProgress function
+     * This function now includes logic to handle the "Processing" state for the final chunk.
+     */
     function uploadFileWithProgress(file) {
-    activeUploads++;
-    updateUploadCount();
-    uploadContainer.style.display = 'block';
-    document.body.classList.add('upload-active');
-    const chunkSize = 5 * 1024 * 1024; // 5MB chunks
-    const totalChunks = Math.ceil(file.size / chunkSize);
-    let chunkNumber = 0;
+        activeUploads++;
+        updateUploadCount();
+        uploadContainer.style.display = 'block';
+        document.body.classList.add('upload-active');
+        const chunkSize = 5 * 1024 * 1024; // 5MB chunks
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        let chunkNumber = 0;
+        const fileExt = (file.name.split('.').pop() || 'FILE').toUpperCase().substring(0, 4);
 
-    const fileExt = (file.name.split('.').pop() || 'FILE').toUpperCase().substring(0, 4);
-
-    const container = document.createElement('div');
-    container.className = 'p-2 mb-2 border rounded bg-white';
-    container.innerHTML = `
-      <div class="d-flex align-items-center">
-        <div class="flex-shrink-0 me-2">
-          <div class="d-flex align-items-center justify-content-center bg-body-tertiary text-secondary fw-bold rounded" style="width: 40px; height: 40px; font-size: 0.8rem;">
-            ${fileExt}
+        const container = document.createElement('div');
+        container.className = 'p-2 mb-2 border rounded bg-white';
+        container.innerHTML = `
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0 me-2">
+              <div class="d-flex align-items-center justify-content-center bg-body-tertiary text-secondary fw-bold rounded" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                ${fileExt}
+              </div>
+            </div>
+            <div class="flex-grow-1" style="min-width: 0;">
+              <div class="fw-semibold small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">
+                ${file.name}
+              </div>
+              <div class="progress mt-1" style="height: 5px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+              </div>
+              <div class="d-flex justify-content-between small text-muted mt-1">
+                <div class="upload-status" style="font-size: 0.75rem;">Starting...</div>
+                <div class="upload-meta text-end" style="font-size: 0.75rem;"></div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="flex-grow-1" style="min-width: 0;">
-          <div class="fw-semibold small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">
-            ${file.name}
-          </div>
-          <div class="progress mt-1" style="height: 5px;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
-          </div>
-          <div class="d-flex justify-content-between small text-muted mt-1">
-            <div class="upload-status" style="font-size: 0.75rem;">Starting...</div>
-            <div class="upload-meta text-end" style="font-size: 0.75rem;"></div>
-          </div>
-        </div>
-      </div>
-    `;
-    uploadBody.appendChild(container);
+        `;
+        uploadBody.appendChild(container);
 
-    const progressBar = container.querySelector('.progress-bar');
-    const statusText = container.querySelector('.upload-status');
-    const metaText = container.querySelector('.upload-meta');
+        const progressBar = container.querySelector('.progress-bar');
+        const statusText = container.querySelector('.upload-status');
+        const metaText = container.querySelector('.upload-meta');
 
-    function uploadNextChunk() {
-        if (chunkNumber >= totalChunks) {
-            return; // All chunks are uploaded
-        }
+        function uploadNextChunk() {
+            if (chunkNumber >= totalChunks) return;
 
-        const start = chunkNumber * chunkSize;
-        const end = Math.min(start + chunkSize, file.size);
-        const chunk = file.slice(start, end);
-        
-        const formData = new FormData();
-        formData.append('fileToUpload', chunk);
-        formData.append('chunkNumber', chunkNumber);
-        formData.append('totalChunks', totalChunks);
-        formData.append('fileName', file.name);
-        formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
-        
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload.php', true);
-        
-        let chunkStartTime = performance.now();
+            const start = chunkNumber * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
+            const isLastChunk = chunkNumber === totalChunks - 1;
 
-        // Add progress listener for real-time speed and ETA
-        xhr.upload.addEventListener('progress', e => {
-            if (e.lengthComputable) {
-                // Calculate overall file progress
-                const totalBytesUploaded = (chunkNumber * chunkSize) + e.loaded;
-                const percentComplete = (totalBytesUploaded / file.size) * 100;
-                progressBar.style.width = `${percentComplete}%`;
+            const formData = new FormData();
+            formData.append('fileToUpload', chunk);
+            formData.append('chunkNumber', chunkNumber);
+            formData.append('totalChunks', totalChunks);
+            formData.append('fileName', file.name);
+            formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload.php', true);
+            
+            let chunkStartTime = performance.now();
 
-                // Calculate speed based on current chunk's progress
-                const timeElapsed = (performance.now() - chunkStartTime) / 1000; // in seconds
-                if (timeElapsed > 0.2) { // Update only after a short delay to get a stable reading
-                    const speedBps = e.loaded / timeElapsed; // Bytes per second
-                    const speedMBps = speedBps / (1024 * 1024);
-                    
-                    // Calculate ETA based on remaining bytes for the whole file
-                    const remainingBytes = file.size - totalBytesUploaded;
-                    const etaSeconds = speedBps > 0 ? Math.round(remainingBytes / speedBps) : 0;
-                    
-                    statusText.textContent = `${speedMBps.toFixed(2)} MB/s`;
-                    metaText.textContent = `${etaSeconds}s left`;
+            xhr.upload.addEventListener('progress', e => {
+                if (e.lengthComputable) {
+                    const totalBytesUploaded = (chunkNumber * chunkSize) + e.loaded;
+                    const percentComplete = (totalBytesUploaded / file.size) * 100;
+                    progressBar.style.width = `${percentComplete}%`;
+
+                    const timeElapsed = (performance.now() - chunkStartTime) / 1000;
+                    if (timeElapsed > 0.2 && !isLastChunk) { // Don't show speed on the last chunk
+                        const speedBps = e.loaded / timeElapsed;
+                        const speedMBps = speedBps / (1024 * 1024);
+                        const remainingBytes = file.size - totalBytesUploaded;
+                        const etaSeconds = speedBps > 0 ? Math.round(remainingBytes / speedBps) : 0;
+                        
+                        statusText.textContent = `${speedMBps.toFixed(2)} MB/s`;
+                        metaText.textContent = `${etaSeconds}s left`;
+                    }
                 }
-            }
-        });
+            });
 
-        xhr.onload = () => {
-            if (xhr.status === 200) {
-                if (chunkNumber === totalChunks - 1) {
-                    // Last chunk was successful, finalize the upload UI
-                    progressBar.style.width = '100%';
-                    progressBar.classList.remove('progress-bar-animated');
-                    progressBar.classList.replace('bg-primary', 'bg-success');
-                    statusText.textContent = 'Completed!';
-                    metaText.textContent = `(${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
-                    refreshFileList(true);
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    if (isLastChunk) {
+                        // MODIFIED: Finalize the UI, changing from yellow to green
+                        progressBar.style.width = '100%';
+                        progressBar.classList.remove('progress-bar-animated', 'bg-warning');
+                        progressBar.classList.add('bg-success');
+                        statusText.textContent = 'Completed!';
+                        metaText.textContent = `(${formatSize(file.size)})`;
+                        refreshFileList(true);
 
-                    setTimeout(() => {
-                        container.remove();
-                        activeUploads--;
-                        updateUploadCount();
-                        if (activeUploads === 0) {
-                          document.body.classList.remove('upload-active');
-                          uploadContainer.style.display = 'none';
-                        }
-                    }, 5000);
+                        setTimeout(() => {
+                            container.remove();
+                            activeUploads--;
+                            updateUploadCount();
+                            if (activeUploads === 0) {
+                              document.body.classList.remove('upload-active');
+                              uploadContainer.style.display = 'none';
+                            }
+                        }, 5000);
+                    } else {
+                        chunkNumber++;
+                        uploadNextChunk();
+                    }
                 } else {
-                    // Upload the next chunk
-                    chunkNumber++;
-                    uploadNextChunk();
+                    progressBar.classList.remove('progress-bar-animated', 'bg-warning');
+                    progressBar.classList.replace('bg-primary', 'bg-danger');
+                    statusText.textContent = 'Upload failed';
+                    metaText.textContent = xhr.responseText || 'Server Error';
                 }
-            } else {
-                // Handle server error for a chunk
-                progressBar.classList.remove('progress-bar-animated');
-                progressBar.classList.replace('bg-primary', 'bg-danger');
-                statusText.textContent = 'Upload failed';
-                metaText.textContent = xhr.responseText || 'Server Error';
-            }
-        };
+            };
 
-        xhr.onerror = () => {
-            // Handle network errors
-            progressBar.classList.remove('progress-bar-animated');
-            progressBar.classList.replace('bg-primary', 'bg-danger');
-            statusText.textContent = 'Network Error';
-        };
+            xhr.onerror = () => {
+                progressBar.classList.remove('progress-bar-animated', 'bg-warning');
+                progressBar.classList.replace('bg-primary', 'bg-danger');
+                statusText.textContent = 'Network Error';
+            };
+            
+            // NEW: Before sending the last chunk, update the UI to the "Processing" state
+            if (isLastChunk) {
+                statusText.textContent = 'Processing...';
+                metaText.textContent = formatSize(file.size);
+                progressBar.classList.remove('bg-primary');
+                progressBar.classList.add('bg-warning');
+            }
+            
+            xhr.send(formData);
+        }
         
-        xhr.send(formData);
+        uploadNextChunk();
     }
-    
-    // Start the upload chain
-    uploadNextChunk();
-}
+
+    // --- All your other functions (create folder, modals, bind buttons, etc.) ---
 
     function triggerMobileUpload() {
         document.getElementById('mobileUploadInput').click();
@@ -490,21 +508,16 @@ document.addEventListener('DOMContentLoaded', () => {
         this.value = '';
     });
     
-    // --- All your other functions (create folder, modals, bind buttons, etc.) ---
-    
     document.getElementById('newFolderForm').addEventListener('submit', function (e) {
       e.preventDefault();
       const folderName = document.getElementById('folderName').value.trim();
       if (!folderName) return;
-
       const formData = new FormData();
       formData.append('folderName', folderName);
       formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
-
       fetch('/create.php', { method: 'POST', body: formData })
         .then(res => res.ok ? refreshFileList(true) : res.text().then(alert))
         .catch(err => alert("Error: " + err));
-      
       const modal = bootstrap.Modal.getInstance(document.getElementById('newFolderModal'));
       modal.hide();
     });
@@ -521,12 +534,10 @@ document.addEventListener('DOMContentLoaded', () => {
               const path = btn.dataset.path;
               const name = btn.dataset.name;
               const isDir = btn.closest('.list-group-item').querySelector('.bi-folder-fill') !== null;
-              
               document.getElementById('oldPathInput').value = path;
               const newBaseNameInput = document.getElementById('newBaseNameInput');
               const newExtensionInput = document.getElementById('newExtensionInput');
               const extensionGroup = newExtensionInput.closest('.mb-3');
-
               if (isDir) {
                   newBaseNameInput.value = name;
                   newExtensionInput.value = '';
@@ -542,7 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
                   }
                   extensionGroup.style.display = 'block';
               }
-
               const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
               renameModal.show();
           });
@@ -554,7 +564,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const filePath = button.getAttribute('data-path');
                 if (!filePath) return alert("No file path provided.");
                 if (!confirm(`Are you sure you want to delete this item?\n\nPath: ${filePath}`)) return;
-
                 try {
                     const response = await fetch('/delete.php', {
                         method: 'POST',
@@ -597,34 +606,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('renameForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const base = document.getElementById('newBaseNameInput').value.trim();
-    const ext = document.getElementById('newExtensionInput').value.trim();
-    const isDir = document.getElementById('newExtensionInput').closest('.mb-3').style.display === 'none';
-
-    let newName = base;
-    if (!isDir && ext) {
-        newName = `${base}.${ext}`;
-    }
-
-    const formData = new FormData(this);
-    formData.set('newName', newName);
-
-    fetch('/update.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(res => {
-            if (res.ok) {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('renameModal'));
-                modal.hide();
-                refreshFileList(true);
-            } else {
-                return res.text().then(msg => alert("Rename failed: " + msg));
-            }
-        })
-        .catch(err => alert("Error: " + err));
-});
+        e.preventDefault();
+        const base = document.getElementById('newBaseNameInput').value.trim();
+        const ext = document.getElementById('newExtensionInput').value.trim();
+        const isDir = document.getElementById('newExtensionInput').closest('.mb-3').style.display === 'none';
+        let newName = base;
+        if (!isDir && ext) {
+            newName = `${base}.${ext}`;
+        }
+        const formData = new FormData(this);
+        formData.set('newName', newName);
+        fetch('/update.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (res.ok) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('renameModal'));
+                    modal.hide();
+                    refreshFileList(true);
+                } else {
+                    return res.text().then(msg => alert("Rename failed: " + msg));
+                }
+            })
+            .catch(err => alert("Error: " + err));
+    });
 
     bindFileManagerButtons();
 });
