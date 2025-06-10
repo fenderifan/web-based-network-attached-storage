@@ -93,6 +93,8 @@ $subPath = $subPath ?? '/';
     }
     .breadcrumb-dropdown {
     max-width: 250px;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
 }
   </style>
 </head>
@@ -134,7 +136,7 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
-      <div class="col p-3" style="min-height: 90vh; overflow-y: scroll;">
+      <div class="col p-3" style="min-height: 90vh; overflow-y: scroll; overflow: hidden;">
         <?php
         $viewFile = __DIR__ . '/' . $view . '.php';
         if (file_exists($viewFile)) {
