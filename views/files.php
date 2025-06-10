@@ -151,7 +151,7 @@ if (!empty($trimmedSubPath)) {
 
 
   <?php foreach ($items as $item): ?>
-    <?php if ($item === '.' || $item === '..' || $item === '.tmp') continue; // MODIFIED LINE ?>
+    <?php if ($item === '.' || $item === '..' || $item === '.tmp' || $item === '.gitkeep') continue; // MODIFIED LINE ?>
     <?php
       $itemPath = $fullPath . '/' . $item;
       $itemUri = '/files' . rtrim($subPath, '/') . '/' . $item;

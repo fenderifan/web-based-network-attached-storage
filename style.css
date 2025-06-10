@@ -1,10 +1,92 @@
-body {
-    font-family: sans-serif;
-    margin: 30px;
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow-x: hidden;
 }
-input[type="file"] {
-    margin-bottom: 10px;
+
+.modal-title {
+      max-width: calc(100% - 40px); /* Leave space for the close button */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+@media (max-width: 767.98px) {
+  body.upload-active .container-fluid {
+    padding-bottom: 50px; 
+  }
 }
-ul li {
-    margin: 5px 0;
+
+@media (min-width: 768px) {
+  body {
+    overflow-y: auto; /* allow scroll on desktop */
+  }
+}
+    .file-item {
+      cursor: pointer;
+    }
+    .breadcrumb a {
+      text-decoration: none;
+    }
+    .navbar {
+      height: 56px;
+      padding: 0;
+    }
+
+    .navbar .container-fluid {
+      height: 100%;
+      align-items: center;
+      padding: 0 1rem;
+    }
+
+    .navbar-brand {
+      font-size: 1.25rem;
+      line-height: 1.2;
+    }
+    .col {
+  min-width: 0; /* allows flex children to shrink */
+  overflow-x: auto; /* if really needed */
+
+  .truncate-custom {
+  max-width: calc(100vw - 100px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) {
+  .truncate-custom {
+    max-width: calc(100vw - 650px);
+  }
+}
+
+@media (min-width: 992px) {
+  /* Bootstrap lg breakpoint is 992px */
+  .truncate-custom {
+    max-width: calc(100vw - 750px);
+  }
+}
+
+}
+@media (max-width: 767.98px) {
+  #uploadContainer {
+    width: 100% !important;      /* Override inline style to be full width */
+    margin: 0 !important;         /* Override .m-3 class */
+    left: 0 !important;           /* Ensure it starts from the left edge */
+    right: 0 !important;          /* Ensure it goes to the right edge */
+    border-radius: 0 !important;  /* Remove rounded corners */
+    border-left: none !important; /* Remove side borders to blend */
+    border-right: none !important;
+  }
+}
+#previewModal .modal-body img,
+    #previewModal .modal-body video {
+        max-height: calc(100vh - 206px);
+        object-fit: contain;
+    }
+    .breadcrumb-dropdown {
+    max-width: 250px;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
 }
