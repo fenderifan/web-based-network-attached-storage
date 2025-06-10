@@ -142,7 +142,7 @@ if (!empty($trimmedSubPath)) {
     <?php if (count($breadcrumbs) > 1): ?>
       <span>›</span>
       <div class="dropdown">
-        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           ...
         </button>
         <ul class="dropdown-menu breadcrumb-dropdown">
@@ -205,7 +205,7 @@ if (!empty($trimmedSubPath)) {
 
             <div style="width: 40px;" class="text-end">
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
+                    <button class="btn" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
