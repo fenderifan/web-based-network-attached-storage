@@ -104,7 +104,7 @@ if (!empty($trimmedSubPath)) {
 <div class="list-group list-group-flush border rounded">
   <div class="list-group-item d-flex fw-bold text-muted">
   <div class="flex-grow-1">Name</div>
-  <div class="d-none d-md-block" style="width: 100px;">Type</div>
+  <div class="d-none d-lg-block" style="width: 100px;">Type</div>
   <div class="d-none d-md-block" style="width: 140px;">Date modified</div>
   <div class="d-none d-md-block" style="width: 80px;">Size</div>
   <div style="width: 40px;"></div>
@@ -139,7 +139,7 @@ if (!empty($trimmedSubPath)) {
 
 
 
-  <div class="d-none d-md-block text-muted small" style="width: 100px;"><?= $type ?></div>
+  <div class="d-none d-lg-block text-muted small" style="width: 100px;"><?= $type ?></div>
 
   <div class="d-none d-md-block text-muted small" style="width: 140px;"><?= $dateModified ?></div>
 

@@ -68,7 +68,13 @@ $subPath = $subPath ?? '/';
 }
 
 @media (min-width: 768px) {
-  /* Bootstrap md breakpoint is 768px */
+  .truncate-custom {
+    max-width: calc(100vw - 650px);
+  }
+}
+
+@media (min-width: 992px) {
+  /* Bootstrap lg breakpoint is 992px */
   .truncate-custom {
     max-width: calc(100vw - 750px);
   }
@@ -96,6 +102,7 @@ $subPath = $subPath ?? '/';
     max-height: calc(100vh - 130px);
     overflow-y: auto;
 }
+  </style>
   </style>
 </head>
 <body>
