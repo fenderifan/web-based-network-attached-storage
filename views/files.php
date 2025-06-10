@@ -70,6 +70,30 @@ function formatSize($bytes) {
     return $size;
 }
 
+function getDirectorySize($path) {
+    if (!is_dir($path)) {
+        return 0;
+    }
+
+    $totalSize = 0;
+    $files = scandir($path);
+
+    foreach ($files as $file) {
+        if ($file === '.' || $file === '..') {
+            continue;
+        }
+
+        $filePath = $path . '/' . $file;
+
+        if (is_dir($filePath)) {
+            $totalSize += getDirectorySize($filePath);
+        } else {
+            $totalSize += filesize($filePath);
+        }
+    }
+
+    return $totalSize;
+}
 
 $items = scandir($fullPath);
 
@@ -133,7 +157,7 @@ if (!empty($trimmedSubPath)) {
       $itemUri = '/files' . rtrim($subPath, '/') . '/' . $item;
       $isDir = is_dir($itemPath);
       list($iconClass, $colorClass) = getIconClassAndColorForFile($item, $isDir);
-      $size = $isDir ? '' : formatSize(filesize($itemPath));
+      $size = $isDir ? formatSize(getDirectorySize($itemPath)) : formatSize(filesize($itemPath));
       $type = $isDir ? 'Folder' : pathinfo($item, PATHINFO_EXTENSION);
       $download = $isDir ? '' : '<li><a class="dropdown-item" href="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri) . '&raw=1') . '" download>Download</a></li>';
       $dateModified = date("d/m/y H:i", filemtime($itemPath));
