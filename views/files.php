@@ -83,9 +83,9 @@ if (!empty($trimmedSubPath)) {
         <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           ...
         </button>
-        <ul class="dropdown-menu">
+        <ul class="dropdown-menu breadcrumb-dropdown">
           <?php for ($i = 0; $i < count($breadcrumbs) - 1; $i++): ?>
-            <li><a class="dropdown-item" href="<?= htmlspecialchars($breadcrumbs[$i]['path']) ?>">
+            <li><a class="dropdown-item text-truncate" href="<?= htmlspecialchars($breadcrumbs[$i]['path']) ?>" title="<?= htmlspecialchars($breadcrumbs[$i]['name']) ?>">
               <?= htmlspecialchars($breadcrumbs[$i]['name']) ?>
             </a></li>
           <?php endfor; ?>

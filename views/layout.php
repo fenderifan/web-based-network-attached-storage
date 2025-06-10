@@ -91,6 +91,9 @@ $subPath = $subPath ?? '/';
         max-height: calc(100vh - 206px);
         object-fit: contain;
     }
+    .breadcrumb-dropdown {
+    max-width: 250px;
+}
   </style>
 </head>
 <body>
