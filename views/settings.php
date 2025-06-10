@@ -9,6 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentSettings['theme'] = $_POST['theme'] ?? 'light';
     $currentSettings['default_sort'] = $_POST['default_sort'] ?? 'name_asc';
     $currentSettings['show_hidden_files'] = isset($_POST['show_hidden_files']);
+    $currentSettings['type_grouping'] = isset($_POST['type_grouping']); // Added for Type Grouping
+    $currentSettings['timezone'] = $_POST['timezone'] ?? 'Asia/Jakarta'; // Added timezone setting
 
     if (save_settings($currentSettings)) {
         // Send a success response for the fetch request
@@ -60,26 +62,45 @@ $diskUsagePercent = ($diskUsed / $diskTotal) * 100;
                 <div class="mb-3">
                     <label for="themeSelect" class="form-label">Theme</label>
                     <select id="themeSelect" name="theme" class="form-select">
-                        <option value="light" <?= $currentSettings['theme'] === 'light' ? 'selected' : '' ?>>Light Mode</option>
-                        <option value="dark" <?= $currentSettings['theme'] === 'dark' ? 'selected' : '' ?>>Dark Mode</option>
+                        <option value="light" <?= ($currentSettings['theme'] ?? 'light') === 'light' ? 'selected' : '' ?>>Light Mode</option>
+                        <option value="dark" <?= ($currentSettings['theme'] ?? 'light') === 'dark' ? 'selected' : '' ?>>Dark Mode</option>
                     </select>
                 </div>
 
                 <div class="mb-3">
+                    <label for="timezoneSelect" class="form-label">Timezone</label>
+                    <select id="timezoneSelect" name="timezone" class="form-select">
+                        <?php
+                        $selected_timezone = $currentSettings['timezone'] ?? 'Asia/Jakarta';
+                        $timezones = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
+                        foreach ($timezones as $timezone) {
+                            $selected = ($timezone === $selected_timezone) ? 'selected' : '';
+                            echo "<option value=\"".htmlspecialchars($timezone)."\" $selected>".htmlspecialchars($timezone)."</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
                     <label for="sortSelect" class="form-label">Default Sort Order</label>
                     <select id="sortSelect" name="default_sort" class="form-select">
-                        <option value="name_asc" <?= $currentSettings['default_sort'] === 'name_asc' ? 'selected' : '' ?>>Name (A-Z)</option>
-                        <option value="name_desc" <?= $currentSettings['default_sort'] === 'name_desc' ? 'selected' : '' ?>>Name (Z-A)</option>
-                        <option value="date_desc" <?= $currentSettings['default_sort'] === 'date_desc' ? 'selected' : '' ?>>Date (Newest First)</option>
-                        <option value="date_asc" <?= $currentSettings['default_sort'] === 'date_asc' ? 'selected' : '' ?>>Date (Oldest First)</option>
-                        <option value="size_desc" <?= $currentSettings['default_sort'] === 'size_desc' ? 'selected' : '' ?>>Size (Largest First)</option>
-                        <option value="size_asc" <?= $currentSettings['default_sort'] === 'size_asc' ? 'selected' : '' ?>>Size (Smallest First)</option>
+                        <option value="name_asc" <?= ($currentSettings['default_sort'] ?? 'name_asc') === 'name_asc' ? 'selected' : '' ?>>Name (A-Z)</option>
+                        <option value="name_desc" <?= ($currentSettings['default_sort'] ?? 'name_asc') === 'name_desc' ? 'selected' : '' ?>>Name (Z-A)</option>
+                        <option value="date_desc" <?= ($currentSettings['default_sort'] ?? 'name_asc') === 'date_desc' ? 'selected' : '' ?>>Date (Newest First)</option>
+                        <option value="date_asc" <?= ($currentSettings['default_sort'] ?? 'name_asc') === 'date_asc' ? 'selected' : '' ?>>Date (Oldest First)</option>
+                        <option value="size_desc" <?= ($currentSettings['default_sort'] ?? 'name_asc') === 'size_desc' ? 'selected' : '' ?>>Size (Largest First)</option>
+                        <option value="size_asc" <?= ($currentSettings['default_sort'] ?? 'name_asc') === 'size_asc' ? 'selected' : '' ?>>Size (Smallest First)</option>
                     </select>
                 </div>
 
                 <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" role="switch" id="showHiddenFiles" name="show_hidden_files" <?= $currentSettings['show_hidden_files'] ? 'checked' : '' ?>>
+                    <input class="form-check-input" type="checkbox" role="switch" id="showHiddenFiles" name="show_hidden_files" <?= ($currentSettings['show_hidden_files'] ?? false) ? 'checked' : '' ?>>
                     <label class="form-check-label" for="showHiddenFiles">Show Hidden Files (.dotfiles)</label>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="typeGrouping" name="type_grouping" <?= ($currentSettings['type_grouping'] ?? false) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="typeGrouping">Group by File Type</label>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Save Changes</button>

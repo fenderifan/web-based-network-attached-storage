@@ -10,6 +10,9 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 ini_set('max_execution_time', 300); // Set a reasonable execution time
+require_once __DIR__ . '/config.php'; 
+$settings = load_settings();
+date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
 
 // --- PATH SETUP ---
 $baseDir = __DIR__ . '/files';
@@ -103,4 +106,3 @@ if ($isLastChunk) {
     http_response_code(200);
     echo "Chunk #$chunkNumber of $totalChunks received.";
 }
-?>

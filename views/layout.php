@@ -20,15 +20,6 @@ $text_class = $theme === 'dark' ? 'text-light' : 'text-dark';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
   <link href="style.css" rel="stylesheet"/>
-  <style>
-    /* Custom dark theme for sidebar to match Gemini UI */
-    .sidebar-custom-dark {
-        background-color: #1f2937 !important; /* A cool, dark gray */
-    }
-    [data-bs-theme="dark"] .navbar {
-        background-color: #1f2937 !important;
-    }
-  </style>
 </head>
 <body>
   <nav class="navbar <?= $navbar_bg_class ?> d-md-none sticky-top">
@@ -90,20 +81,19 @@ $text_class = $theme === 'dark' ? 'text-light' : 'text-dark';
       </div>
     </div>
 
-    <div id="uploadContainer" class="upload-container position-fixed bottom-0 end-0 m-3 shadow rounded border" style="width: 380px; z-index: 1050; display: none;">
-    <div class="upload-header d-flex justify-content-between align-items-center p-2 border-bottom bg-white">
-        <h6 class="mb-0 ms-2">Uploading... (<span id="uploadCount">0</span>)</h6>
-        <div>
-            <button type="button" id="toggleUploads" class="btn btn-sm btn-icon">
-                <i class="bi-chevron-up"></i>
-            </button>
+    <div id="uploadContainer" class="upload-container position-fixed bottom-0 end-0 m-3 shadow border" style="width: 380px; z-index: 1050; display: none;">
+        <div class="upload-header d-flex justify-content-between align-items-center p-2 border-bottom bg-body-secondary rounded-top">
+            <h6 class="mb-0 ms-2">Uploading... (<span id="uploadCount">0</span>)</h6>
+            <div>
+                <button type="button" id="toggleUploads" class="btn btn-sm btn-icon">
+                    <i class="bi-chevron-up"></i>
+                </button>
+            </div>
+        </div>
+        <div id="uploadBody" class="upload-body p-2 bg-body rounded-bottom" style="max-height: 300px; overflow-y: auto;">
         </div>
     </div>
-    <div id="uploadBody" class="upload-body p-2 bg-light" style="max-height: 300px; overflow-y: auto;">
-        </div>
-</div>
-
-<div class="modal fade" id="renameModal" tabindex="-1">
+    <div class="modal fade" id="renameModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form id="renameForm">
@@ -303,11 +293,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const fileExt = (file.name.split('.').pop() || 'FILE').toUpperCase().substring(0, 4);
 
         const container = document.createElement('div');
-        container.className = 'p-2 mb-2 border rounded bg-white';
+        // START: MODIFIED JS - Use theme-aware classes
+        container.className = 'p-2 mb-2 border rounded bg-body-tertiary';
         container.innerHTML = `
           <div class="d-flex align-items-center">
             <div class="flex-shrink-0 me-2">
-              <div class="d-flex align-items-center justify-content-center bg-body-tertiary text-secondary fw-bold rounded" style="width: 40px; height: 40px; font-size: 0.8rem;">
+              <div class="d-flex align-items-center justify-content-center bg-body-secondary text-secondary fw-bold rounded" style="width: 40px; height: 40px; font-size: 0.8rem;">
                 ${fileExt}
               </div>
             </div>
@@ -325,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
         `;
+        // END: MODIFIED JS
         uploadBody.appendChild(container);
 
         const progressBar = container.querySelector('.progress-bar');

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config.php';
 
 $settings = load_settings();
 $baseDir = realpath(__DIR__ . '/../files');
+date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $subPath = '/' . ltrim(substr($uri, strlen('/files')), '/');
 $fullPath = realpath($baseDir . $subPath);
@@ -65,13 +66,12 @@ function getDirectorySize($path) {
 
 // === START: CORRECTED LOGIC BLOCK ===
 
-// 1. Get the raw list of files from the directory.
 $rawItems = scandir($fullPath);
 $items = [];
 
 // 2. Prepare a detailed array for sorting.
 foreach ($rawItems as $item) {
-    if (!$settings['show_hidden_files'] && $item[0] === '.') {
+    if (!($settings['show_hidden_files'] ?? false) && $item[0] === '.') {
         continue;
     }
     if ($item === '.' || $item === '..') {
@@ -79,29 +79,44 @@ foreach ($rawItems as $item) {
     }
 
     $itemPath = $fullPath . '/' . $item;
+    $isDir = is_dir($itemPath);
     $items[] = [
         'name' => $item,
         'path' => $itemPath,
-        'is_dir' => is_dir($itemPath),
-        'size' => is_dir($itemPath) ? 0 : filesize($itemPath),
-        'date' => filemtime($itemPath) // <--- FIX: Changed 'mtime' to 'date' to match sort key
+        'is_dir' => $isDir,
+        'size' => $isDir ? 0 : filesize($itemPath),
+        'date' => filemtime($itemPath),
+        // NEW: Add type for sorting
+        'type' => $isDir ? '' : strtolower(pathinfo($item, PATHINFO_EXTENSION))
     ];
 }
 
 // 3. Apply the sorting logic to the detailed array.
 $sortOrder = $settings['default_sort'] ?? 'name_asc';
 list($sortKey, $sortDir) = explode('_', $sortOrder);
+$typeGrouping = $settings['type_grouping'] ?? false;
 
-usort($items, function ($a, $b) use ($sortKey, $sortDir) {
-    // Always put folders first.
+usort($items, function ($a, $b) use ($sortKey, $sortDir, $typeGrouping) {
+    // Priority 1: Always put folders first.
     if ($a['is_dir'] !== $b['is_dir']) {
         return $a['is_dir'] ? -1 : 1;
     }
+
+    // Priority 2: If type grouping is enabled, sort files by extension.
+    if ($typeGrouping && !$a['is_dir']) {
+        $typeCmp = strcasecmp($a['type'], $b['type']);
+        if ($typeCmp !== 0) {
+            return $typeCmp;
+        }
+    }
+
+    // Priority 3: Use the primary sort key (name, date, or size).
     $valA = $a[$sortKey];
     $valB = $b[$sortKey];
     $cmp = ($sortKey === 'name') ? strcasecmp($valA, $valB) : ($valA <=> $valB);
     return $sortDir === 'asc' ? $cmp : -$cmp;
 });
+
 
 // === END: CORRECTED LOGIC BLOCK ===
 

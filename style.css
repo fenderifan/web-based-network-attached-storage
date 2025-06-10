@@ -90,3 +90,10 @@ html, body {
     max-height: calc(100vh - 130px);
     overflow-y: auto;
 }
+
+.sidebar-custom-dark {
+    background-color: #1f2937 !important;
+}
+[data-bs-theme="dark"] .navbar {
+    background-color: #1f2937 !important;
+}
