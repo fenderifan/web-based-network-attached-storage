@@ -1,9 +1,18 @@
 <?php
+// layout.php
+require_once __DIR__ . '/../config.php';
+$settings = load_settings();
+$theme = $settings['theme'] ?? 'light';
 $subPath = $subPath ?? '/';
+
+// Define theme-specific classes
+$sidebar_bg_class = $theme === 'dark' ? 'sidebar-custom-dark' : 'bg-light';
+$navbar_bg_class = $theme === 'dark' ? 'bg-dark' : 'bg-light';
+$text_class = $theme === 'dark' ? 'text-light' : 'text-dark';
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="<?= htmlspecialchars($theme) ?>">
 <head>
   <meta charset="UTF-8" />
   <title><?= htmlspecialchars($title) ?></title>
@@ -11,9 +20,18 @@ $subPath = $subPath ?? '/';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
   <link href="style.css" rel="stylesheet"/>
+  <style>
+    /* Custom dark theme for sidebar to match Gemini UI */
+    .sidebar-custom-dark {
+        background-color: #1f2937 !important; /* A cool, dark gray */
+    }
+    [data-bs-theme="dark"] .navbar {
+        background-color: #1f2937 !important;
+    }
+  </style>
 </head>
 <body>
-  <nav class="navbar navbar-light bg-light d-md-none sticky-top">
+  <nav class="navbar <?= $navbar_bg_class ?> d-md-none sticky-top">
     <div class="container-fluid">
       <button class="btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
         <i class="bi bi-list fs-3"></i>
@@ -22,35 +40,35 @@ $subPath = $subPath ?? '/';
     </div>
   </nav>
 
-  <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="sidebar">
+  <div class="offcanvas offcanvas-start d-md-none <?= $sidebar_bg_class ?>" tabindex="-1" id="sidebar">
     <div class="offcanvas-header">
-      <h5 class="offcanvas-title">Menu</h5>
+      <h5 class="offcanvas-title <?= $text_class ?>">Menu</h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
       <ul class="nav flex-column">
-        <li class="nav-item"><a href="/files" class="nav-link"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
-        <li class="nav-item"><a href="/settings" class="nav-link"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
-        <li class="nav-item"><a href="../" class="nav-link"><i class="bi bi-back me-2"></i> Back to Main</a></li>
+        <li class="nav-item"><a href="/files" class="nav-link <?= $text_class ?>"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
+        <li class="nav-item"><a href="/settings" class="nav-link <?= $text_class ?>"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
+        <li class="nav-item"><a href="../" class="nav-link <?= $text_class ?>"><i class="bi bi-back me-2"></i> Back to Main</a></li>
       </ul>
     </div>
   </div>
 
   <div class="container-fluid">
     <div class="row flex-wrap">
-      <div class="d-none d-md-block bg-light position-sticky top-0"
+      <div class="d-none d-md-block <?= $sidebar_bg_class ?> position-sticky top-0"
      style="height: 100vh; width: 250px;">
-  <div class="d-flex flex-column px-3 pt-2">
-    <h5 class="fw-bold text-dark">
-      <i class="bi bi-folder-fill text-warning"></i> File Manager
-    </h5>
-    <ul class="nav nav-pills flex-column">
-      <li class="nav-item"><a href="/files" class="nav-link text-dark"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
-      <li class="nav-item"><a href="/settings" class="nav-link text-dark"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
-      <li class="nav-item"><a href="../" class="nav-link text-dark"><i class="bi bi-back me-2"></i> Back to Main</a></li>
-    </ul>
-  </div>
-</div>
+        <div class="d-flex flex-column px-3 pt-2">
+          <h5 class="fw-bold <?= $text_class ?>">
+            <i class="bi bi-folder-fill text-warning"></i> File Manager
+          </h5>
+          <ul class="nav nav-pills flex-column">
+            <li class="nav-item"><a href="/files" class="nav-link <?= $text_class ?>"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
+            <li class="nav-item"><a href="/settings" class="nav-link <?= $text_class ?>"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
+            <li class="nav-item"><a href="../" class="nav-link <?= $text_class ?>"><i class="bi bi-back me-2"></i> Back to Main</a></li>
+          </ul>
+        </div>
+      </div>
 
       <div class="col p-3" style="min-height: 90vh; overflow-y: scroll; overflow: hidden;">
         <?php
@@ -64,6 +82,7 @@ $subPath = $subPath ?? '/';
       </div>
     </div>
   </div>
+    
     <div id="uploadOverlay"class="position-fixed top-0 start-0 w-100 h-100 d-none"style="z-index: 1050; backdrop-filter: blur(6px); background-color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center;">
       <div class="text-center">
         <i class="bi bi-cloud-upload-fill fs-1 text-primary" style="font-size: 4rem;"></i>
