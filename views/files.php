@@ -38,15 +38,15 @@ function getIconClassAndColorForFile($filename, $isDir) {
         'ppt'  => ['bi-file-earmark-ppt', 'text-warning'],
         'pptx' => ['bi-file-earmark-ppt', 'text-warning'],
         'txt'  => ['bi-file-earmark-text', 'text-secondary'],
-        'zip'  => ['bi-file-earmark-zip', 'text-warning'], 
+        'zip'  => ['bi-file-earmark-zip', 'text-warning'],
         'rar'  => ['bi-file-earmark-zip', 'text-warning'],
         'mp3'  => ['bi-file-earmark-music', 'text-warning'],
         'wav'  => ['bi-file-earmark-music', 'text-warning'],
         'mp4'  => ['bi-file-earmark-play', 'text-success'],
         'mov'  => ['bi-file-earmark-play', 'text-success'],
         'avi'  => ['bi-file-earmark-play', 'text-success'],
-        'php'  => ['bi-file-code', 'text-secondary'], 
-        'js'   => ['bi-file-code', 'text-secondary'], 
+        'php'  => ['bi-file-code', 'text-secondary'],
+        'js'   => ['bi-file-code', 'text-secondary'],
         'html' => ['bi-file-code', 'text-secondary'],
         'css'  => ['bi-file-code', 'text-secondary'],
         // add more if needed
@@ -58,57 +58,49 @@ function getIconClassAndColorForFile($filename, $isDir) {
 
 $items = scandir($fullPath);
 
-// Breadcrumb parts
-$breadcrumbParts = explode('/', trim($subPath, '/'));
+// --- START: MODIFIED BREADCRUMB LOGIC ---
 $breadcrumbs = [];
-$accumulatedPath = '';
-
-foreach ($breadcrumbParts as $part) {
-    $accumulatedPath .= '/' . $part;
-    $breadcrumbs[] = [
-        'name' => $part,
-        'path' => '/files' . $accumulatedPath
-    ];
+$trimmedSubPath = trim($subPath, '/');
+if (!empty($trimmedSubPath)) {
+    $breadcrumbParts = explode('/', $trimmedSubPath);
+    $accumulatedPath = '';
+    foreach ($breadcrumbParts as $part) {
+        $accumulatedPath .= '/' . $part;
+        $breadcrumbs[] = [
+            'name' => $part,
+            'path' => '/files' . $accumulatedPath
+        ];
+    }
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-  <div class="d-flex align-items-center flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center mb-4 gap-2">
+  <div class="d-flex align-items-center flex-nowrap gap-2" style="min-width: 0;">
     <a href="/files" class="text-decoration-none fw-bold">Files</a>
-    <?php if (count($breadcrumbs) > 4): ?>
+    <?php if (count($breadcrumbs) > 1): ?>
       <span>›</span>
       <div class="dropdown">
-        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">...</button>
+        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          ...
+        </button>
         <ul class="dropdown-menu">
-          <?php for ($i = 0; $i < count($breadcrumbs) - 2; $i++): ?>
+          <?php for ($i = 0; $i < count($breadcrumbs) - 1; $i++): ?>
             <li><a class="dropdown-item" href="<?= htmlspecialchars($breadcrumbs[$i]['path']) ?>">
               <?= htmlspecialchars($breadcrumbs[$i]['name']) ?>
             </a></li>
           <?php endfor; ?>
         </ul>
       </div>
+    <?php endif; ?>
+    <?php if (!empty($breadcrumbs)): ?>
       <span>›</span>
-      <a href="<?= htmlspecialchars($breadcrumbs[count($breadcrumbs) - 2]['path']) ?>" class="text-decoration-none">
-        <?= htmlspecialchars($breadcrumbs[count($breadcrumbs) - 2]['name']) ?>
-      </a>
-      <span>›</span>
-      <span class="fw-bold text-muted"><?= htmlspecialchars(end($breadcrumbs)['name']) ?></span>
-    <?php else: ?>
-      <?php foreach ($breadcrumbs as $index => $crumb): ?>
-        <span>›</span>
-        <?php if ($index === count($breadcrumbs) - 1): ?>
-          <span class="fw-bold text-muted"><?= htmlspecialchars($crumb['name']) ?></span>
-        <?php else: ?>
-          <a href="<?= htmlspecialchars($crumb['path']) ?>" class="text-decoration-none">
-            <?= htmlspecialchars($crumb['name']) ?>
-          </a>
-        <?php endif; ?>
-      <?php endforeach; ?>
+      <span class="fw-bold text-muted text-truncate" title="<?= htmlspecialchars(end($breadcrumbs)['name']) ?>">
+        <?= htmlspecialchars(end($breadcrumbs)['name']) ?>
+      </span>
     <?php endif; ?>
   </div>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#actionModal">Upload or Create</button>
+  <button class="btn btn-primary" style="min-width: 150px;" data-bs-toggle="modal" data-bs-target="#actionModal">Upload or Create</button>
 </div>
-
 <div class="list-group list-group-flush border rounded">
   <div class="list-group-item d-flex fw-bold text-muted">
   <div class="flex-grow-1">Name</div>

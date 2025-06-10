@@ -131,7 +131,7 @@ $subPath = $subPath ?? '/';
   </div>
 </div>
 
-      <div class="col p-3">
+      <div class="col p-3" style="min-height: 90vh; overflow-y: scroll;">
         <?php
         $viewFile = __DIR__ . '/' . $view . '.php';
         if (file_exists($viewFile)) {
