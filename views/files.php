@@ -55,6 +55,21 @@ function getIconClassAndColorForFile($filename, $isDir) {
     return $map[$ext] ?? ['bi-file-earmark-text', 'text-secondary']; // default grey icon
 }
 
+function formatSize($bytes) {
+    if ($bytes >= 1073741824) {
+        $size = number_format($bytes / 1073741824, 1, ',', '') . ' GB';
+    } elseif ($bytes >= 1048576) {
+        $size = number_format($bytes / 1048576, 1, ',', '') . ' MB';
+    } elseif ($bytes >= 1024) {
+        $size = number_format($bytes / 1024, 1, ',', '') . ' KB';
+    } elseif ($bytes > 0) {
+        $size = $bytes . ' B';
+    } else {
+        $size = '0 B';
+    }
+    return $size;
+}
+
 
 $items = scandir($fullPath);
 
@@ -118,7 +133,7 @@ if (!empty($trimmedSubPath)) {
       $itemUri = '/files' . rtrim($subPath, '/') . '/' . $item;
       $isDir = is_dir($itemPath);
       list($iconClass, $colorClass) = getIconClassAndColorForFile($item, $isDir);
-      $size = $isDir ? '' : round(filesize($itemPath) / 1048576, 2) . ' MB';
+      $size = $isDir ? '' : formatSize(filesize($itemPath));
       $type = $isDir ? 'Folder' : pathinfo($item, PATHINFO_EXTENSION);
       $download = $isDir ? '' : '<li><a class="dropdown-item" href="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri) . '&raw=1') . '" download>Download</a></li>';
       $dateModified = date("d/m/y H:i", filemtime($itemPath));
