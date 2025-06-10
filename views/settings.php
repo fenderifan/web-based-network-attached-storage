@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newTheme = formData.get('theme');
             const alertContainer = document.getElementById('alert-container');
 
-            fetch('/views/settings.php', {
+            fetch('/settings', {
                 method: 'POST',
                 body: formData
             })
