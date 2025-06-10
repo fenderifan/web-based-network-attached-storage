@@ -1,17 +1,5 @@
 <?php
-// update.php
-
-// --- CONFIGURATION ---
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-ini_set('max_execution_time', 300); // Set a reasonable execution time
-// START: MODIFIED CODE
-date_default_timezone_set('Asia/Jakarta'); // Set timezone to match your local time
-// END: MODIFIED CODE
-
-// --- PATH SETUP ---
-$baseDir = __DIR__ . '/files';
-$tempDir = __DIR__ . '/files/.tmp';
+$baseDir = realpath(__DIR__ . '/files');
 
 $oldPath = $_POST['oldPath'] ?? '';
 $newName = $_POST['newName'] ?? '';
@@ -51,22 +39,12 @@ if (file_exists($newFullPath)) {
     exit;
 }
 
-// --- START: FIX FOR DATE MODIFIED ---
-// 1. Get the original modification time BEFORE renaming.
-$originalMtime = filemtime($oldFullPath);
-// --- END: FIX FOR DATE MODIFIED ---
-
 // Attempt rename
-if (rename($oldFullPath, $newFullPath)) {
-    // --- START: FIX FOR DATE MODIFIED ---
-    // 2. If rename is successful, re-apply the original modification time.
-    touch($newFullPath, $originalMtime);
-    // --- END: FIX FOR DATE MODIFIED ---
-    
-    http_response_code(200);
-    echo "Renamed successfully.";
-} else {
+if (!rename($oldFullPath, $newFullPath)) {
     http_response_code(500);
     echo "Rename failed.";
     exit;
 }
+
+http_response_code(200);
+echo "Renamed successfully.";
