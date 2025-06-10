@@ -124,6 +124,7 @@ $subPath = $subPath ?? '/';
       <ul class="nav flex-column">
         <li class="nav-item"><a href="/files" class="nav-link"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
         <li class="nav-item"><a href="/settings" class="nav-link"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
+        <li class="nav-item"><a href="../" class="nav-link"><i class="bi bi-back me-2"></i> Back to Main</a></li>
       </ul>
     </div>
   </div>
@@ -139,6 +140,7 @@ $subPath = $subPath ?? '/';
     <ul class="nav nav-pills flex-column">
       <li class="nav-item"><a href="/files" class="nav-link text-dark"><i class="bi bi-folder-fill me-2"></i> Files</a></li>
       <li class="nav-item"><a href="/settings" class="nav-link text-dark"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
+      <li class="nav-item"><a href="../" class="nav-link text-dark"><i class="bi bi-back me-2"></i> Back to Main</a></li>
     </ul>
   </div>
 </div>
