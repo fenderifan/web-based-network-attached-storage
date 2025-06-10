@@ -4,30 +4,6 @@ require_once __DIR__ . '/../config.php';
 
 $currentSettings = load_settings();
 
-// This block now handles the background fetch request from JavaScript
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $currentSettings['theme'] = $_POST['theme'] ?? 'light';
-    $currentSettings['default_sort'] = $_POST['default_sort'] ?? 'name_asc';
-    $currentSettings['show_hidden_files'] = isset($_POST['show_hidden_files']);
-    $currentSettings['type_grouping'] = isset($_POST['type_grouping']); // Added for Type Grouping
-    $currentSettings['timezone'] = $_POST['timezone'] ?? 'Asia/Jakarta'; // Added timezone setting
-
-    if (save_settings($currentSettings)) {
-        // Send a success response for the fetch request
-        http_response_code(200);
-        echo "Settings saved successfully!";
-    } else {
-        http_response_code(500);
-        echo "Error: Could not write to config.json.";
-    }
-    exit; // Stop further execution for fetch requests
-}
-
-/**
- * Formats bytes into a human-readable string.
- * @param int $bytes
- * @return string
- */
 function format_bytes($bytes) {
     if ($bytes >= 1073741824) {
         return number_format($bytes / 1073741824, 2) . ' GB';
@@ -165,60 +141,53 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const formData = new FormData(this);
-            const newTheme = formData.get('theme');
             const alertContainer = document.getElementById('alert-container');
 
             fetch('/settings', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (response.ok) {
-                    return response.text();
+            .then(response => response.json()) // Expect a JSON response
+            .then(data => {
+                // The 'data' object is now {success: true, message: "..."}
+                if (data.success) {
+                    // --- This is your theme-switching logic from before ---
+                    const newTheme = formData.get('theme');
+                    document.documentElement.setAttribute('data-bs-theme', newTheme);
+                    const isDark = newTheme === 'dark';
+                    const desktopSidebar = document.querySelector('.d-none.d-md-block.position-sticky');
+                    const mobileSidebar = document.querySelector('.offcanvas#sidebar');
+                    const mobileNavbar = document.querySelector('.navbar.d-md-none');
+                    const sidebarClassToAdd = isDark ? 'sidebar-custom-dark' : 'bg-light';
+                    const navbarClassToAdd = isDark ? 'bg-dark' : 'bg-light';
+                    const textClassToAdd = isDark ? 'text-light' : 'text-dark';
+                    [desktopSidebar, mobileSidebar, mobileNavbar].forEach(el => {
+                        if (!el) return;
+                        el.classList.remove('sidebar-custom-dark', 'bg-light', 'bg-dark');
+                        if (el.matches('.navbar')) {
+                            el.classList.add(navbarClassToAdd);
+                        } else {
+                            el.classList.add(sidebarClassToAdd);
+                        }
+                    });
+                    const textElements = document.querySelectorAll('.d-md-block .nav-link, .d-md-block h5, .offcanvas .nav-link, .offcanvas h5');
+                    textElements.forEach(el => {
+                        el.classList.remove('text-light', 'text-dark');
+                        el.classList.add(textClassToAdd);
+                    });
+                    // --- End of theme-switching logic ---
+
+                    // Show the success message from the JSON response
+                    alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                    setTimeout(() => alertContainer.innerHTML = '', 3000);
+
+                } else {
+                    // If data.success is false, throw an error with the message
+                    throw new Error(data.message);
                 }
-                throw new Error('Failed to save settings.');
-            })
-            .then(message => {
-                // 1. Instantly change the theme on the page
-                document.documentElement.setAttribute('data-bs-theme', newTheme);
-                
-                // --- START: CORRECTED LOGIC ---
-
-                // 2. Define all theme-related elements and classes
-                const isDark = newTheme === 'dark';
-                const desktopSidebar = document.querySelector('.d-none.d-md-block.position-sticky');
-                const mobileSidebar = document.querySelector('.offcanvas#sidebar');
-                const mobileNavbar = document.querySelector('.navbar.d-md-none');
-                
-                const sidebarClassToAdd = isDark ? 'sidebar-custom-dark' : 'bg-light';
-                const navbarClassToAdd = isDark ? 'bg-dark' : 'bg-light';
-                const textClassToAdd = isDark ? 'text-light' : 'text-dark';
-
-                // 3. Update background classes by removing all possibilities and adding the correct one
-                [desktopSidebar, mobileSidebar, mobileNavbar].forEach(el => {
-                    if (!el) return; // Skip if element doesn't exist
-                    el.classList.remove('sidebar-custom-dark', 'bg-light', 'bg-dark');
-                    if (el.matches('.navbar')) {
-                        el.classList.add(navbarClassToAdd);
-                    } else {
-                        el.classList.add(sidebarClassToAdd);
-                    }
-                });
-
-                // 4. Update text classes on all relevant links and headers
-                const textElements = document.querySelectorAll('.d-md-block .nav-link, .d-md-block h5, .offcanvas .nav-link, .offcanvas h5');
-                textElements.forEach(el => {
-                    el.classList.remove('text-light', 'text-dark');
-                    el.classList.add(textClassToAdd);
-                });
-                
-                // --- END: CORRECTED LOGIC ---
-
-                // 5. Show a success message
-                alertContainer.innerHTML = `<div class="alert alert-success">${message}</div>`;
-                setTimeout(() => alertContainer.innerHTML = '', 3000);
             })
             .catch(error => {
+                // This will catch any network errors or errors thrown above
                 console.error('Error:', error);
                 alertContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
                 setTimeout(() => alertContainer.innerHTML = '', 3000);
