@@ -1,5 +1,6 @@
 # Ignore the files folder (your uploads, etc.)
-/files/
+/files/*
+!/files/.gitkeep
 
 # Ignore OS generated files
 .DS_Store
