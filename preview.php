@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/logging.php';
+
 $baseDir = realpath(__DIR__ . '/files');
 $requestedPath = $_GET['path'] ?? '';
 
@@ -17,8 +19,11 @@ if (!$fullPath || strpos($fullPath, $baseDir) !== 0 || !is_file($fullPath)) {
     exit;
 }
 
-$ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
 $filename = basename($fullPath);
+write_log('Loading Preview "' . $filename . '"');
+
+
+$ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
 $fileSize = filesize($fullPath);
 
 $mimeTypes = [
@@ -70,6 +75,7 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
         header('Content-Length: ' . $fileSize);
         readfile($fullPath);
     }
+    write_log('Preview Loaded "' . $filename . '"');
     exit;
 }
 ?>
@@ -84,7 +90,7 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
   <img src="/preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="img-fluid" alt="<?= htmlspecialchars($filename) ?>">
 
   <div class="mt-3 text-center">
-    <a href="/preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="btn btn-sm btn-outline-primary" download>
+    <a href="/download.php?path=<?= urlencode($requestedPath) ?>" class="btn btn-sm btn-outline-primary" download>
       <i class="bi bi-download me-1"></i> Download Image
     </a>
   </div>
@@ -96,7 +102,7 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
   </video>
   
   <div class="mt-3 text-center">
-    <a href="/preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="btn btn-sm btn-outline-primary" download>
+    <a href="/download.php?path=<?= urlencode($requestedPath) ?>" class="btn btn-sm btn-outline-primary" download>
       <i class="bi bi-download me-1"></i> Download Video
     </a>
   </div>
@@ -105,7 +111,7 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
   <div class="p-5 text-center">
       <i class="bi bi-file-earmark-lock fs-1 text-muted"></i>
       <p class="mt-3 text-muted">Live preview is not available for this file type.</p>
-      <a href="/preview.php?path=<?= urlencode($requestedPath) ?>&raw=1" class="btn btn-primary" download>
+      <a href="/download.php?path=<?= urlencode($requestedPath) ?>" class="btn btn-primary" download>
         <i class="bi bi-download me-2"></i>Download File
       </a>
   </div>

@@ -16,6 +16,8 @@ if (!$fullPath || strpos($fullPath, $baseDir) !== 0) {
 }
 
 if (is_file($fullPath)) {
+    // This part should technically not be reached if using download.php
+    // but it's good to keep as a fallback.
     header('Content-Type: ' . mime_content_type($fullPath));
     header('Content-Length: ' . filesize($fullPath));
     readfile($fullPath);
@@ -64,12 +66,9 @@ function getDirectorySize($path) {
     return $totalSize;
 }
 
-// === START: CORRECTED LOGIC BLOCK ===
-
 $rawItems = scandir($fullPath);
 $items = [];
 
-// 2. Prepare a detailed array for sorting.
 foreach ($rawItems as $item) {
     if (!($settings['show_hidden_files'] ?? false) && $item[0] === '.') {
         continue;
@@ -86,41 +85,30 @@ foreach ($rawItems as $item) {
         'is_dir' => $isDir,
         'size' => $isDir ? 0 : filesize($itemPath),
         'date' => filemtime($itemPath),
-        // NEW: Add type for sorting
         'type' => $isDir ? '' : strtolower(pathinfo($item, PATHINFO_EXTENSION))
     ];
 }
 
-// 3. Apply the sorting logic to the detailed array.
 $sortOrder = $settings['default_sort'] ?? 'name_asc';
 list($sortKey, $sortDir) = explode('_', $sortOrder);
 $typeGrouping = $settings['type_grouping'] ?? false;
 
 usort($items, function ($a, $b) use ($sortKey, $sortDir, $typeGrouping) {
-    // Priority 1: Always put folders first.
     if ($a['is_dir'] !== $b['is_dir']) {
         return $a['is_dir'] ? -1 : 1;
     }
-
-    // Priority 2: If type grouping is enabled, sort files by extension.
     if ($typeGrouping && !$a['is_dir']) {
         $typeCmp = strcasecmp($a['type'], $b['type']);
         if ($typeCmp !== 0) {
             return $typeCmp;
         }
     }
-
-    // Priority 3: Use the primary sort key (name, date, or size).
     $valA = $a[$sortKey];
     $valB = $b[$sortKey];
     $cmp = ($sortKey === 'name') ? strcasecmp($valA, $valB) : ($valA <=> $valB);
     return $sortDir === 'asc' ? $cmp : -$cmp;
 });
 
-
-// === END: CORRECTED LOGIC BLOCK ===
-
-// --- START: BREADCRUMB LOGIC ---
 $breadcrumbs = [];
 $trimmedSubPath = trim($subPath, '/');
 if (!empty($trimmedSubPath)) {
@@ -184,8 +172,9 @@ if (!empty($trimmedSubPath)) {
         list($iconClass, $colorClass) = getIconClassAndColorForFile($item, $isDir);
         $size = $isDir ? formatSize(getDirectorySize($itemPath)) : formatSize($itemData['size']);
         $type = $isDir ? 'Folder' : pathinfo($item, PATHINFO_EXTENSION);
-        $download = $isDir ? '' : '<li><a class="dropdown-item" href="' . htmlspecialchars('/preview.php?path=' . rawurlencode($itemUri) . '&raw=1') . '" download>Download</a></li>';
-        $dateModified = date("d/m/y H:i", $itemData['date']); // <--- FIX: Changed 'mtime' to 'date'
+        // MODIFIED: Point to download.php
+        $download = $isDir ? '' : '<li><a class="dropdown-item" href="' . htmlspecialchars('/download.php?path=' . rawurlencode($itemUri)) . '" download>Download</a></li>';
+        $dateModified = date("d/m/y H:i", $itemData['date']);
         ?>
         <div class="list-group-item d-flex align-items-center">
             <div class="flex-grow-1 d-flex align-items-center overflow-hidden" style="min-width: 0;">

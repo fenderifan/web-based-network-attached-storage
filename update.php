@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/logging.php';
+
 $baseDir = realpath(__DIR__ . '/files');
 
 $oldPath = $_POST['oldPath'] ?? '';
@@ -12,6 +14,8 @@ if (!$oldPath || !$newName) {
 
 // Remove '/files' prefix and decode URL
 $relativePath = ltrim(str_replace('/files', '', rawurldecode($oldPath)), '/');
+$oldName = basename($relativePath);
+
 
 // Resolve to full path
 $oldFullPath = realpath($baseDir . '/' . $relativePath);
@@ -45,6 +49,8 @@ if (!rename($oldFullPath, $newFullPath)) {
     echo "Rename failed.";
     exit;
 }
+
+write_log('Renamed from "' . $oldName . '" to "' . basename($newName) . '"');
 
 http_response_code(200);
 echo "Renamed successfully.";

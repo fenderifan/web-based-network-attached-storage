@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/logging.php';
+
 $baseDir = realpath(__DIR__ . '/files');
 
 // Read JSON body
@@ -13,6 +15,7 @@ if (!$path) {
 
 // Remove '/files' prefix and decode
 $relativePath = ltrim(str_replace('/files', '', rawurldecode($path)), '/');
+$itemName = basename($relativePath);
 
 // Build full path
 $fullPath = realpath($baseDir . '/' . $relativePath);
@@ -55,6 +58,8 @@ if (is_file($fullPath)) {
     echo "Invalid file/folder.";
     exit;
 }
+
+write_log('Deleted "' . $itemName . '"');
 
 http_response_code(200);
 echo "Deleted successfully.";

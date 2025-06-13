@@ -1,16 +1,11 @@
 <?php
-/**
- * Chunked File Upload Receiver
- *
- * This script handles files uploaded in chunks, reassembles them,
- * and places them in the final destination.
- */
-
 // --- CONFIGURATION ---
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-ini_set('max_execution_time', 300); // Set a reasonable execution time
-require_once __DIR__ . '/config.php'; 
+ini_set('max_execution_time', 600); // Increased execution time
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logging.php';
+
 $settings = load_settings();
 date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
 
@@ -26,7 +21,7 @@ if (!file_exists($tempDir)) {
 if (!isset($_FILES['fileToUpload']) || $_FILES['fileToUpload']['error'] !== UPLOAD_ERR_OK) {
     http_response_code(400);
     $errorMessage = 'Upload error. Code: ' . ($_FILES['fileToUpload']['error'] ?? 'Unknown');
-    error_log($errorMessage);
+    write_log($errorMessage);
     echo $errorMessage;
     exit;
 }
@@ -36,22 +31,42 @@ $chunkNumber = isset($_POST['chunkNumber']) ? (int)$_POST['chunkNumber'] : 0;
 $totalChunks = isset($_POST['totalChunks']) ? (int)$_POST['totalChunks'] : 0;
 $originalName = isset($_POST['fileName']) ? $_POST['fileName'] : $_FILES['fileToUpload']['name'];
 $targetFolder = isset($_POST['targetFolder']) ? trim($_POST['targetFolder'], '/') : '';
+$clientStartTime = isset($_POST['startTime']) ? (float)$_POST['startTime'] : microtime(true);
+$fileSize = isset($_POST['fileSize']) ? (int)$_POST['fileSize'] : 0;
+
 
 // --- SANITIZE AND PREPARE PATHS ---
 $safeFileName = preg_replace("/([^a-zA-Z0-9\._\s-]+)/", "", basename($originalName));
-$uploadIdentifier = md5($safeFileName); // Unique identifier based on the file name
+$uploadIdentifier = md5($safeFileName);
 
 $finalDirectory = $baseDir . ($targetFolder ? "/$targetFolder" : '');
 if (!file_exists($finalDirectory)) {
     mkdir($finalDirectory, 0777, true);
 }
 
+// --- LOGGING UPLOAD PROGRESS ---
+$ram = get_ram_usage();
+$cpu = get_cpu_usage();
+$bytesUploaded = ($chunkNumber + 1) * (20 * 1024 * 1024); // Based on new 20MB chunk size
+$timeElapsed = microtime(true) - $clientStartTime;
+$speed = $timeElapsed > 0 ? ($bytesUploaded / $timeElapsed) / (1024 * 1024) : 0; // MB/s
+
+write_log(sprintf(
+    'Uploading "%s" (Cpu Usage : %s, Ram Usage : %.1f GB / %d %%, Transfer Speed : %.1f MB/s)',
+    $safeFileName,
+    $cpu,
+    $ram['size'],
+    $ram['percent'],
+    $speed
+));
+
+
 // --- PROCESS THE CHUNK ---
 $chunkPath = $tempDir . '/' . $uploadIdentifier . '.part' . $chunkNumber;
 if (!move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $chunkPath)) {
     http_response_code(500);
     $errorMessage = "Failed to move uploaded chunk to temporary directory.";
-    error_log($errorMessage);
+    write_log($errorMessage);
     echo $errorMessage;
     exit;
 }
@@ -60,9 +75,10 @@ if (!move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $chunkPath)) {
 $isLastChunk = ($chunkNumber === $totalChunks - 1);
 
 if ($isLastChunk) {
-    $finalDestinationPath = $finalDirectory . '/' . $safeFileName;
+    $processingStartTime = microtime(true);
+    write_log('Processing "' . $safeFileName . '"');
 
-    // --- Auto-rename logic if the final file already exists ---
+    $finalDestinationPath = $finalDirectory . '/' . $safeFileName;
     $counter = 1;
     $nameWithoutExt = pathinfo($safeFileName, PATHINFO_FILENAME);
     $extension = pathinfo($safeFileName, PATHINFO_EXTENSION);
@@ -75,34 +91,48 @@ if ($isLastChunk) {
     $finalFile = fopen($finalDestinationPath, 'wb');
     if (!$finalFile) {
         http_response_code(500);
-        echo "Failed to open final file for writing.";
+        write_log("Failed to open final file for writing: " . $finalDestinationPath);
         exit;
     }
 
-    // Loop through all chunks and append them using efficient streams
     for ($i = 0; $i < $totalChunks; $i++) {
         $partPath = $tempDir . '/' . $uploadIdentifier . '.part' . $i;
         $chunkStream = fopen($partPath, 'rb');
-
         if ($chunkStream === false) {
             fclose($finalFile);
-            unlink($finalDestinationPath); // Clean up failed assembly
+            unlink($finalDestinationPath);
             http_response_code(500);
-            echo "Failed to read chunk #$i.";
+            write_log("Failed to read chunk #$i.");
             exit;
         }
-        
-        stream_copy_to_stream($chunkStream, $finalFile); // Efficiently append chunk
-        
+        stream_copy_to_stream($chunkStream, $finalFile);
         fclose($chunkStream);
-        unlink($partPath); // Clean up the chunk file
+        unlink($partPath);
+    }
+    fclose($finalFile);
+
+    $processingTime = microtime(true) - $processingStartTime;
+    $uploadTime = $processingStartTime - $clientStartTime;
+    $totalTime = microtime(true) - $clientStartTime;
+
+    function format_bytes($bytes) {
+        if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 1) . ' GB';
+        if ($bytes >= 1048576) return number_format($bytes / 1048576, 1) . ' MB';
+        if ($bytes >= 1024) return number_format($bytes / 1024, 1) . ' KB';
+        return $bytes . ' B';
     }
 
-    fclose($finalFile);
-    
+    write_log(sprintf(
+        'Uploaded "%s" (%s) in %.0f sec (Uploading : %.0f sec, Processing : %.0f sec)',
+        basename($finalDestinationPath),
+        format_bytes($fileSize),
+        $totalTime,
+        $uploadTime,
+        $processingTime
+    ));
+
     echo "Upload complete: " . basename($finalDestinationPath);
 } else {
-    // Acknowledge receipt of the chunk
     http_response_code(200);
     echo "Chunk #$chunkNumber of $totalChunks received.";
 }
