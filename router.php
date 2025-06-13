@@ -1,25 +1,24 @@
 <?php
-$path = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
-// Jalankan script dinamis meskipun file tidak ada secara fisik (supaya script di-handle index.php)
-$scriptRoutes = [
-    '/preview.php',
-    '/upload.php',
-    '/update.php',
-    '/create.php',
-    '/delete.php'
-];
+// The directory where your project is located.
+$root = __DIR__;
 
-if (in_array($path, $scriptRoutes)) {
-    require __DIR__ . '/index.php';
-    return true;
-}
+// Get the requested URI.
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Kalau file statik ada (misal .css, .js, .png), serve langsung
-$file = __DIR__ . $path;
-if (file_exists($file) && is_file($file)) {
+// Construct the full path to the requested file.
+$file = $root . $uri;
+
+// 1. Check if the requested path points to an existing file.
+// This is the crucial part for serving your Bootstrap assets (CSS, JS).
+if (is_file($file)) {
+    // If it's a file, return false.
+    // This tells the PHP built-in server to serve the file directly.
     return false;
 }
 
-// Default fallback ke index
-require __DIR__ . '/index.php';
+// 2. If it's not a file, it's a virtual route.
+// Pass the request to your main index.php to handle the application logic.
+require_once $root . '/index.php';
+
+?>
