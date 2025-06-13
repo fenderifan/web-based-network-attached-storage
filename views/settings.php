@@ -1,28 +1,62 @@
 <?php
 // settings.php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../logging.php'; // Make sure logging is included
 
+// --- HANDLE SETTINGS SAVE (POST REQUEST) ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $oldSettings = load_settings();
+    
+    // Sanitize and prepare the new settings array
+    $newSettings = [
+        'theme' => isset($_POST['theme']) && $_POST['theme'] === 'dark' ? 'dark' : 'light',
+        'timezone' => isset($_POST['timezone']) && in_array($_POST['timezone'], DateTimeZone::listIdentifiers()) ? $_POST['timezone'] : ($oldSettings['timezone'] ?? 'Asia/Jakarta'),
+        'default_sort' => $_POST['default_sort'] ?? ($oldSettings['default_sort'] ?? 'name_asc'),
+        'show_hidden_files' => isset($_POST['show_hidden_files']),
+        'type_grouping' => isset($_POST['type_grouping'])
+    ];
+    
+    // --- COMPARE AND LOG CHANGES ---
+    foreach ($newSettings as $key => $newValue) {
+        $oldValue = $oldSettings[$key] ?? null;
+        
+        // Normalize boolean values for consistent comparison and logging
+        $displayOld = is_bool($oldValue) ? ($oldValue ? 'true' : 'false') : $oldValue;
+        $displayNew = is_bool($newValue) ? ($newValue ? 'true' : 'false') : $newValue;
+
+        if ($oldValue !== $newValue) {
+            write_log("Setting changed: '{$key}' from '{$displayOld}' to '{$displayNew}'");
+        }
+    }
+
+    // --- SAVE AND RESPOND ---
+    if (save_settings($newSettings)) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'message' => 'Settings saved successfully.']);
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Failed to write to config file. Check permissions.']);
+    }
+    exit; // Stop script execution after handling the POST request
+}
+
+// --- DISPLAY SETTINGS PAGE (GET REQUEST) ---
 $currentSettings = load_settings();
 
 function format_bytes($bytes) {
-    if ($bytes >= 1073741824) {
-        return number_format($bytes / 1073741824, 2) . ' GB';
-    } elseif ($bytes >= 1048576) {
-        return number_format($bytes / 1048576, 2) . ' MB';
-    } elseif ($bytes >= 1024) {
-        return number_format($bytes / 1024, 2) . ' KB';
-    } elseif ($bytes > 0) {
-        return $bytes . ' B';
-    } else {
-        return '0 B';
-    }
+    if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 2) . ' GB';
+    if ($bytes >= 1048576) return number_format($bytes / 1048576, 2) . ' MB';
+    if ($bytes >= 1024) return number_format($bytes / 1024, 2) . ' KB';
+    if ($bytes > 0) return $bytes . ' B';
+    return '0 B';
 }
 
 // Get disk space info
-$diskFree = disk_free_space(__DIR__);
-$diskTotal = disk_total_space(__DIR__);
-$diskUsed = $diskTotal - $diskFree;
-$diskUsagePercent = ($diskUsed / $diskTotal) * 100;
+$diskFree = @disk_free_space(__DIR__);
+$diskTotal = @disk_total_space(__DIR__);
+$diskUsed = $diskTotal > 0 ? $diskTotal - $diskFree : 0;
+$diskUsagePercent = $diskTotal > 0 ? ($diskUsed / $diskTotal) * 100 : 0;
 
 ?>
 
@@ -141,53 +175,33 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const formData = new FormData(this);
+            // Manually append checkbox values if they are not checked, because unchecked
+            // checkboxes are not included in form data by default.
+            if (!formData.has('show_hidden_files')) formData.append('show_hidden_files', '');
+            if (!formData.has('type_grouping')) formData.append('type_grouping', '');
+
             const alertContainer = document.getElementById('alert-container');
 
             fetch('/settings', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json()) // Expect a JSON response
+            .then(response => response.json()) 
             .then(data => {
-                // The 'data' object is now {success: true, message: "..."}
                 if (data.success) {
-                    // --- This is your theme-switching logic from before ---
                     const newTheme = formData.get('theme');
                     document.documentElement.setAttribute('data-bs-theme', newTheme);
-                    const isDark = newTheme === 'dark';
-                    const desktopSidebar = document.querySelector('.d-none.d-md-block.position-sticky');
-                    const mobileSidebar = document.querySelector('.offcanvas#sidebar');
-                    const mobileNavbar = document.querySelector('.navbar.d-md-none');
-                    const sidebarClassToAdd = isDark ? 'sidebar-custom-dark' : 'bg-light';
-                    const navbarClassToAdd = isDark ? 'bg-dark' : 'bg-light';
-                    const textClassToAdd = isDark ? 'text-light' : 'text-dark';
-                    [desktopSidebar, mobileSidebar, mobileNavbar].forEach(el => {
-                        if (!el) return;
-                        el.classList.remove('sidebar-custom-dark', 'bg-light', 'bg-dark');
-                        if (el.matches('.navbar')) {
-                            el.classList.add(navbarClassToAdd);
-                        } else {
-                            el.classList.add(sidebarClassToAdd);
-                        }
-                    });
-                    const textElements = document.querySelectorAll('.d-md-block .nav-link, .d-md-block h5, .offcanvas .nav-link, .offcanvas h5');
-                    textElements.forEach(el => {
-                        el.classList.remove('text-light', 'text-dark');
-                        el.classList.add(textClassToAdd);
-                    });
-                    // --- End of theme-switching logic ---
-
-                    // Show the success message from the JSON response
+                    
                     alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
                     setTimeout(() => alertContainer.innerHTML = '', 3000);
 
+                    // Optional: You may want to reload the page to see all setting changes apply
+                    // window.location.reload(); 
                 } else {
-                    // If data.success is false, throw an error with the message
                     throw new Error(data.message);
                 }
             })
             .catch(error => {
-                // This will catch any network errors or errors thrown above
                 console.error('Error:', error);
                 alertContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
                 setTimeout(() => alertContainer.innerHTML = '', 3000);

@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadContainer.style.display = 'block';
         document.body.classList.add('upload-active');
         
-        const chunkSize = 5 * 1024 * 1024; // Decreased to 5MB for better speed
+        const chunkSize = 10 * 1024 * 1024; // Decreased to 10MB for better speed
         const totalChunks = Math.ceil(file.size / chunkSize);
         let chunkNumber = 0;
         const fileExt = (file.name.split('.').pop() || 'FILE').toUpperCase().substring(0, 4);
@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     metaText.textContent = `${etaSeconds}s left`;
                 }
             }
-        }, 1000); // Update UI every second
+        }, 1000); // Update UI every 10 second
 
         function uploadNextChunk() {
             if (chunkNumber >= totalChunks) return;
