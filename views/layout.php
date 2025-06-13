@@ -1,5 +1,14 @@
 <?php
 // layout.php
+
+// *** NEW: Check for a special logging request from the JavaScript ***
+if (isset($_GET['log_update'])) {
+    // Write a more general message to the PHP error log
+    error_log('Auto-refreshing file list...');
+    // Stop execution, as this request is only for logging
+    exit();
+}
+
 require_once __DIR__ . '/../config.php';
 $settings = load_settings();
 $theme = $settings['theme'] ?? 'light';
@@ -340,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function refreshFileList(force = false) {
         if (isEditing && !force) return;
+        fetch(window.location.pathname + '?log_update=true');
         fetch(window.location.href)
             .then(res => res.text())
             .then(html => {
