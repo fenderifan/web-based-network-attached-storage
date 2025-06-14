@@ -2,15 +2,12 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/logging.php';
 
-// Load settings and set timezone for accurate logs
 $settings = load_settings();
 date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
 
-// Define constants for file type checks
 define('IMAGE_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
 define('VIDEO_EXTENSIONS', ['mp4', 'webm', 'ogg', 'mov']);
 
-// --- Path and Security Validation ---
 $baseDir = realpath(__DIR__ . '/files');
 $requestedPath = $_GET['path'] ?? '';
 
@@ -20,23 +17,19 @@ if (empty($requestedPath)) {
     exit;
 }
 
-// Sanitize and resolve the real path to prevent directory traversal
 $relativePath = ltrim(str_replace('/files', '', rawurldecode($requestedPath)), '/');
 $fullPath = realpath($baseDir . '/' . $relativePath);
 
-// Security check: Ensure the requested file is within the designated 'files' directory
 if (!$fullPath || strpos($fullPath, $baseDir) !== 0 || !is_file($fullPath)) {
     http_response_code(403);
     echo "Access Denied: The requested file is not accessible.";
     exit;
 }
 
-// --- File Metadata ---
 $filename = basename($fullPath);
 $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
 $fileSize = filesize($fullPath);
 
-// MIME types for common formats
 $mimeTypes = [
     'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png',
     'gif' => 'image/gif', 'webp' => 'image/webp', 'bmp' => 'image/bmp',
@@ -45,45 +38,36 @@ $mimeTypes = [
 ];
 $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
 
-// Helper function to check if the extension is an image
 function is_image($ext) {
     return in_array($ext, IMAGE_EXTENSIONS);
 }
 
-// Helper function to check if the extension is a video
 function is_video($ext) {
     return in_array($ext, VIDEO_EXTENSIONS);
 }
 
 
-// --- Raw File Streaming with Logging ---
-// This block handles direct file delivery for images and videos.
-// It's triggered by adding `&raw=1` to the URL.
 if (isset($_GET['raw']) && $_GET['raw'] === '1') {
     // Turn off output buffering to reduce memory overhead
     if (ob_get_level()) {
         ob_end_clean();
     }
     
-    // Set appropriate content headers
     header('Content-Type: ' . $mime);
     header('Content-Length: ' . $fileSize);
-    header('Accept-Ranges: bytes'); // Essential for video seeking
+    header('Accept-Ranges: bytes');
     
-    // Suggest 'inline' for media types that the browser can display directly
     $disposition = in_array($ext, array_merge(IMAGE_EXTENSIONS, VIDEO_EXTENSIONS)) ? 'inline' : 'attachment';
     header('Content-Disposition: ' . $disposition . '; filename="' . $filename . '"');
     
-    // Flush all headers to the client
     flush();
 
-    // --- LOGIC FOR VIDEO STREAMING ---
+    //untuk video
     if (is_video($ext)) {
         $streamStartTime = microtime(true);
-        $logInterval = 1; // Log every 1 second
+        $logInterval = 1;
         $lastLogTime = $streamStartTime;
 
-        // Check if this is the initial request for the video (not a range request for seeking)
         $is_initial_request = !isset($_SERVER['HTTP_RANGE']) || strpos($_SERVER['HTTP_RANGE'], 'bytes=0-') === 0;
         if ($is_initial_request) {
             write_log(sprintf('Preview Video "%s" (%s)...', $filename, format_bytes($fileSize)));
@@ -92,19 +76,18 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
         $file = @fopen($fullPath, 'rb');
         if ($file) {
             while (!feof($file) && !connection_aborted()) {
-                // Read and send a chunk of the file
-                echo fread($file, 1024 * 1024); // 1MB chunks
+
+                echo fread($file, 2 * 1024 * 1024);
                 flush();
                 
                 $bytesSent = ftell($file);
                 $currentTime = microtime(true);
 
-                // Log stats periodically
                 if ($currentTime - $lastLogTime >= $logInterval) {
                      $ram = get_ram_usage();
                      $cpu = get_cpu_usage();
                      $timeElapsed = $currentTime - $streamStartTime;
-                     $speed = $timeElapsed > 0 ? ($bytesSent / $timeElapsed) / (1024 * 1024) : 0; // MB/s
+                     $speed = $timeElapsed > 0 ? ($bytesSent / $timeElapsed) / (1024 * 1024) : 0;
                      
                      write_log(sprintf(
                         'Streaming Video "%s" (Cpu: %.1f%%, Ram: %s / %d%%, Speed: %.1f MB/s)',
@@ -116,7 +99,7 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
             fclose($file);
         }
     
-    // --- LOGIC FOR IMAGE PREVIEW ---
+    //untuk gambar
     } elseif (is_image($ext)) {
         $ram = get_ram_usage();
         $cpu = get_cpu_usage();
@@ -126,18 +109,12 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
         ));
         readfile($fullPath);
     
-    // --- FALLBACK FOR OTHER FILE TYPES ---
     } else {
-        // No special logging needed for non-media types
         readfile($fullPath);
     }
-    
     exit;
 }
 
-// --- HTML Modal Generation ---
-// This part generates the HTML content for the preview modal window.
-// No changes are needed here.
 ?>
 
 <div class="modal-header">

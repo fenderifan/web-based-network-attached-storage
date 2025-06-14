@@ -1,5 +1,4 @@
 <?php
-// files.php
 require_once __DIR__ . '/../config.php';
 
 $settings = load_settings();
@@ -15,18 +14,9 @@ if (!$fullPath || strpos($fullPath, $baseDir) !== 0) {
     exit;
 }
 
-if (is_file($fullPath)) {
-    // This part should technically not be reached if using download.php
-    // but it's good to keep as a fallback.
-    header('Content-Type: ' . mime_content_type($fullPath));
-    header('Content-Length: ' . filesize($fullPath));
-    readfile($fullPath);
-    exit;
-}
-
 function getIconClassAndColorForFile($filename, $isDir) {
     if ($isDir) {
-        return ['bi-folder-fill', 'text-warning']; // Yellow folder
+        return ['bi-folder-fill', 'text-warning'];
     }
     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
     $map = [
@@ -123,7 +113,6 @@ if (!empty($trimmedSubPath)) {
     }
 }
 ?>
-
 <div class="d-flex justify-content-between align-items-center mb-4 gap-2">
   <div class="d-flex align-items-center flex-nowrap gap-2" style="min-width: 0;">
     <a href="/files" class="text-decoration-none fw-bold">Files</a>
@@ -151,8 +140,6 @@ if (!empty($trimmedSubPath)) {
   </div>
   <button class="btn btn-primary" style="min-width: 150px;" data-bs-toggle="modal" data-bs-target="#actionModal">Upload or Create</button>
 </div>
-
-
 <div class="list-group list-group-flush border rounded">
     <div class="list-group-item d-flex fw-bold text-muted">
         <div class="flex-grow-1">Name</div>
@@ -172,7 +159,6 @@ if (!empty($trimmedSubPath)) {
         list($iconClass, $colorClass) = getIconClassAndColorForFile($item, $isDir);
         $size = $isDir ? formatSize(getDirectorySize($itemPath)) : formatSize($itemData['size']);
         $type = $isDir ? 'Folder' : pathinfo($item, PATHINFO_EXTENSION);
-        // MODIFIED: Point to download.php
         $download = $isDir ? '' : '<li><a class="dropdown-item" href="' . htmlspecialchars('/download.php?path=' . rawurlencode($itemUri)) . '" download>Download</a></li>';
         $dateModified = date("d/m/y H:i", $itemData['date']);
         ?>
@@ -187,11 +173,9 @@ if (!empty($trimmedSubPath)) {
                     </div>
                 </a>
             </div>
-
             <div class="d-none d-lg-block text-muted small" style="width: 100px;"><?= $type ?></div>
             <div class="d-none d-md-block text-muted small" style="width: 140px;"><?= $dateModified ?></div>
             <div class="d-none d-md-block text-muted small" style="width: 80px;"><?= $size ?></div>
-
             <div style="width: 40px;" class="text-end">
                 <div class="dropdown">
                     <button class="btn" type="button" data-bs-toggle="dropdown">
