@@ -1,117 +1,118 @@
 <?php
-require_once __DIR__ . '/../config.php';
-
-$settings = load_settings();
-$baseDir = realpath(__DIR__ . '/../files');
-date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
-$uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-$subPath = '/' . ltrim(substr($uri, strlen('/files')), '/');
-$fullPath = realpath($baseDir . $subPath);
-
-if (!$fullPath || strpos($fullPath, $baseDir) !== 0) {
-    http_response_code(403);
-    echo "Access Denied.";
-    exit;
-}
-
-function getIconClassAndColorForFile($filename, $isDir) {
-    if ($isDir) {
-        return ['bi-folder-fill', 'text-warning'];
+    require_once __DIR__ . '/../config.php';
+    $settings = load_settings();
+    $baseDir = realpath(__DIR__ . '/../files');
+    date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
+    $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    $subPath = '/' . ltrim(substr($uri, strlen('/files')), '/');
+    $fullPath = realpath($baseDir . $subPath);
+    if (!$fullPath || strpos($fullPath, $baseDir) !== 0) {
+        http_response_code(403);
+        echo "Access Denied.";
+        exit;
     }
-    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-    $map = [
-        'jpg'  => ['bi-file-image', 'text-primary'], 'jpeg' => ['bi-file-image', 'text-primary'],
-        'png'  => ['bi-file-image', 'text-primary'], 'gif'  => ['bi-file-image', 'text-success'],
-        'svg'  => ['bi-file-image', 'text-warning'], 'pdf'  => ['bi-file-earmark-pdf', 'text-danger'],
-        'doc'  => ['bi-file-earmark-word', 'text-primary'], 'docx' => ['bi-file-earmark-word', 'text-primary'],
-        'xls'  => ['bi-file-earmark-excel', 'text-success'], 'xlsx' => ['bi-file-earmark-excel', 'text-success'],
-        'ppt'  => ['bi-file-earmark-ppt', 'text-warning'], 'pptx' => ['bi-file-earmark-ppt', 'text-warning'],
-        'txt'  => ['bi-file-earmark-text', 'text-secondary'], 'zip'  => ['bi-file-earmark-zip', 'text-warning'],
-        'rar'  => ['bi-file-earmark-zip', 'text-warning'], 'mp3'  => ['bi-file-earmark-music', 'text-warning'],
-        'wav'  => ['bi-file-earmark-music', 'text-warning'], 'mp4'  => ['bi-file-earmark-play', 'text-success'],
-        'mov'  => ['bi-file-earmark-play', 'text-success'], 'avi'  => ['bi-file-earmark-play', 'text-success'],
-        'php'  => ['bi-file-code', 'text-secondary'], 'js'   => ['bi-file-code', 'text-secondary'],
-        'html' => ['bi-file-code', 'text-secondary'], 'css'  => ['bi-file-code', 'text-secondary'],
-    ];
-    return $map[$ext] ?? ['bi-file-earmark-text', 'text-secondary'];
-}
-
-function formatSize($bytes) {
-    if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 1, ',', '') . ' GB';
-    if ($bytes >= 1048576) return number_format($bytes / 1048576, 1, ',', '') . ' MB';
-    if ($bytes >= 1024) return number_format($bytes / 1024, 1, ',', '') . ' KB';
-    if ($bytes > 0) return $bytes . ' B';
-    return '0 B';
-}
-
-function getDirectorySize($path) {
-    if (!is_dir($path)) return 0;
-    $totalSize = 0;
-    $files = scandir($path);
-    foreach ($files as $file) {
-        if ($file === '.' || $file === '..') continue;
-        $filePath = $path . '/' . $file;
-        $totalSize += is_dir($filePath) ? getDirectorySize($filePath) : filesize($filePath);
+    if (is_file($fullPath)) {
+        $subPath = dirname($subPath);
+        $fullPath = dirname($fullPath);
     }
-    return $totalSize;
-}
-
-$rawItems = scandir($fullPath);
-$items = [];
-
-foreach ($rawItems as $item) {
-    if (!($settings['show_hidden_files'] ?? false) && $item[0] === '.') {
-        continue;
-    }
-    if ($item === '.' || $item === '..') {
-        continue;
-    }
-
-    $itemPath = $fullPath . '/' . $item;
-    $isDir = is_dir($itemPath);
-    $items[] = [
-        'name' => $item,
-        'path' => $itemPath,
-        'is_dir' => $isDir,
-        'size' => $isDir ? 0 : filesize($itemPath),
-        'date' => filemtime($itemPath),
-        'type' => $isDir ? '' : strtolower(pathinfo($item, PATHINFO_EXTENSION))
-    ];
-}
-
-$sortOrder = $settings['default_sort'] ?? 'name_asc';
-list($sortKey, $sortDir) = explode('_', $sortOrder);
-$typeGrouping = $settings['type_grouping'] ?? false;
-
-usort($items, function ($a, $b) use ($sortKey, $sortDir, $typeGrouping) {
-    if ($a['is_dir'] !== $b['is_dir']) {
-        return $a['is_dir'] ? -1 : 1;
-    }
-    if ($typeGrouping && !$a['is_dir']) {
-        $typeCmp = strcasecmp($a['type'], $b['type']);
-        if ($typeCmp !== 0) {
-            return $typeCmp;
+    function getIconClassAndColorForFile($filename, $isDir) {
+        if ($isDir) {
+            return ['bi-folder-fill', 'text-warning'];
         }
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $map = [
+            'jpg'  => ['bi-file-image', 'text-primary'], 'jpeg' => ['bi-file-image', 'text-primary'],
+            'png'  => ['bi-file-image', 'text-primary'], 'gif'  => ['bi-file-image', 'text-success'],
+            'svg'  => ['bi-file-image', 'text-warning'], 'pdf'  => ['bi-file-earmark-pdf', 'text-danger'],
+            'doc'  => ['bi-file-earmark-word', 'text-primary'], 'docx' => ['bi-file-earmark-word', 'text-primary'],
+            'xls'  => ['bi-file-earmark-excel', 'text-success'], 'xlsx' => ['bi-file-earmark-excel', 'text-success'],
+            'ppt'  => ['bi-file-earmark-ppt', 'text-warning'], 'pptx' => ['bi-file-earmark-ppt', 'text-warning'],
+            'txt'  => ['bi-file-earmark-text', 'text-secondary'], 'zip'  => ['bi-file-earmark-zip', 'text-warning'],
+            'rar'  => ['bi-file-earmark-zip', 'text-warning'], 'mp3'  => ['bi-file-earmark-music', 'text-warning'],
+            'wav'  => ['bi-file-earmark-music', 'text-warning'], 'mp4'  => ['bi-file-earmark-play', 'text-success'],
+            'mov'  => ['bi-file-earmark-play', 'text-success'], 'avi'  => ['bi-file-earmark-play', 'text-success'],
+            'php'  => ['bi-file-code', 'text-secondary'], 'js'   => ['bi-file-code', 'text-secondary'],
+            'html' => ['bi-file-code', 'text-secondary'], 'css'  => ['bi-file-code', 'text-secondary'],
+        ];
+        return $map[$ext] ?? ['bi-file-earmark-text', 'text-secondary'];
     }
-    $valA = $a[$sortKey];
-    $valB = $b[$sortKey];
-    $cmp = ($sortKey === 'name') ? strcasecmp($valA, $valB) : ($valA <=> $valB);
-    return $sortDir === 'asc' ? $cmp : -$cmp;
-});
 
-$breadcrumbs = [];
-$trimmedSubPath = trim($subPath, '/');
-if (!empty($trimmedSubPath)) {
-    $breadcrumbParts = explode('/', $trimmedSubPath);
-    $accumulatedPath = '';
-    foreach ($breadcrumbParts as $part) {
-        $accumulatedPath .= '/' . $part;
-        $breadcrumbs[] = [
-            'name' => $part,
-            'path' => '/files' . $accumulatedPath
+    function formatSize($bytes) {
+        if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 1, ',', '') . ' GB';
+        if ($bytes >= 1048576) return number_format($bytes / 1048576, 1, ',', '') . ' MB';
+        if ($bytes >= 1024) return number_format($bytes / 1024, 1, ',', '') . ' KB';
+        if ($bytes > 0) return $bytes . ' B';
+        return '0 B';
+    }
+
+    function getDirectorySize($path) {
+        if (!is_dir($path)) return 0;
+        $totalSize = 0;
+        $files = scandir($path);
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') continue;
+            $filePath = $path . '/' . $file;
+            $totalSize += is_dir($filePath) ? getDirectorySize($filePath) : filesize($filePath);
+        }
+        return $totalSize;
+    }
+
+    $rawItems = scandir($fullPath);
+    $items = [];
+
+    foreach ($rawItems as $item) {
+        if (!($settings['show_hidden_files'] ?? false) && $item[0] === '.') {
+            continue;
+        }
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $itemPath = $fullPath . '/' . $item;
+        $isDir = is_dir($itemPath);
+        $items[] = [
+            'name' => $item,
+            'path' => $itemPath,
+            'is_dir' => $isDir,
+            'size' => $isDir ? 0 : filesize($itemPath),
+            'date' => filemtime($itemPath),
+            'type' => $isDir ? '' : strtolower(pathinfo($item, PATHINFO_EXTENSION))
         ];
     }
-}
+
+    $sortOrder = $settings['default_sort'] ?? 'name_asc';
+    list($sortKey, $sortDir) = explode('_', $sortOrder);
+    $typeGrouping = $settings['type_grouping'] ?? false;
+
+    usort($items, function ($a, $b) use ($sortKey, $sortDir, $typeGrouping) {
+        if ($a['is_dir'] !== $b['is_dir']) {
+            return $a['is_dir'] ? -1 : 1;
+        }
+        if ($typeGrouping && !$a['is_dir']) {
+            $typeCmp = strcasecmp($a['type'], $b['type']);
+            if ($typeCmp !== 0) {
+                return $typeCmp;
+            }
+        }
+        $valA = $a[$sortKey];
+        $valB = $b[$sortKey];
+        $cmp = ($sortKey === 'name') ? strcasecmp($valA, $valB) : ($valA <=> $valB);
+        return $sortDir === 'asc' ? $cmp : -$cmp;
+    });
+
+    $breadcrumbs = [];
+    $trimmedSubPath = trim($subPath, '/');
+    if (!empty($trimmedSubPath)) {
+        $breadcrumbParts = explode('/', $trimmedSubPath);
+        $accumulatedPath = '';
+        foreach ($breadcrumbParts as $part) {
+            $accumulatedPath .= '/' . $part;
+            $breadcrumbs[] = [
+                'name' => $part,
+                'path' => '/files' . $accumulatedPath
+            ];
+        }
+    }
 ?>
 <div class="d-flex justify-content-between align-items-center mb-4 gap-2">
   <div class="d-flex align-items-center flex-nowrap gap-2" style="min-width: 0;">

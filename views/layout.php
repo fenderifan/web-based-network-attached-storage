@@ -428,74 +428,120 @@
 					document.getElementById('previewModalContent').innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
 				});
 				function bindFileManagerButtons() {
-				document.querySelectorAll('.dropdown-item[download]').forEach(btn => {
-					btn.addEventListener('click', () => {
-						document.cookie = "download_in_progress=true; path=/; max-age=60";
+					document.querySelectorAll('.dropdown-item[download]').forEach(btn => {
+						btn.addEventListener('click', () => {
+							document.cookie = "download_in_progress=true; path=/; max-age=60";
+						});
 					});
-				});
-				document.querySelectorAll('.rename-button').forEach(btn => {
-					btn.addEventListener('click', e => {
-						e.preventDefault();
-						const path = btn.dataset.path;
-						const name = btn.dataset.name;
-						const isDir = btn.closest('.list-group-item').querySelector('.bi-folder-fill') !== null;
-						document.getElementById('oldPathInput').value = path;
-						document.getElementById('oldNameInput').value = name;
-						const newBaseNameInput = document.getElementById('newBaseNameInput');
-						const newExtensionInput = document.getElementById('newExtensionInput');
-						if (isDir) {
-							newBaseNameInput.value = name;
-							newExtensionInput.value = '';
-							newExtensionInput.closest('.mb-3').style.display = 'none';
-						} else {
-							const lastDot = name.lastIndexOf('.');
-							newBaseNameInput.value = lastDot !== -1 ? name.substring(0, lastDot) : name;
-							newExtensionInput.value = lastDot !== -1 ? name.substring(lastDot + 1) : '';
-							newExtensionInput.closest('.mb-3').style.display = 'block';
-						}
-						new bootstrap.Modal(document.getElementById('renameModal')).show();
-					});
-				});
-				document.querySelectorAll('.delete-btn').forEach(button => {
-					button.addEventListener('click', async (e) => {
-						e.preventDefault();
-						const filePath = button.dataset.path;
-						if (!confirm(`Are you sure you want to delete this item?\n${filePath}`)) return;
-						try {
-							const response = await fetch('/delete.php', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
-								body: JSON.stringify({ path: filePath })
-							});
-							const resultText = await response.text();
-							if (response.ok) {
-								refreshFileList(true);
+					document.querySelectorAll('.rename-button').forEach(btn => {
+						btn.addEventListener('click', e => {
+							e.preventDefault();
+							const path = btn.dataset.path;
+							const name = btn.dataset.name;
+							const isDir = btn.closest('.list-group-item').querySelector('.bi-folder-fill') !== null;
+							document.getElementById('oldPathInput').value = path;
+							document.getElementById('oldNameInput').value = name;
+							const newBaseNameInput = document.getElementById('newBaseNameInput');
+							const newExtensionInput = document.getElementById('newExtensionInput');
+							if (isDir) {
+								newBaseNameInput.value = name;
+								newExtensionInput.value = '';
+								newExtensionInput.closest('.mb-3').style.display = 'none';
 							} else {
-								alert("Delete failed: " + resultText);
+								const lastDot = name.lastIndexOf('.');
+								newBaseNameInput.value = lastDot !== -1 ? name.substring(0, lastDot) : name;
+								newExtensionInput.value = lastDot !== -1 ? name.substring(lastDot + 1) : '';
+								newExtensionInput.closest('.mb-3').style.display = 'block';
 							}
-						} catch (err) {
-							alert("An error occurred: " + err);
-						}
+							new bootstrap.Modal(document.getElementById('renameModal')).show();
+						});
 					});
-				});
-				document.querySelectorAll('.preview-link').forEach(link => {
-					link.addEventListener('click', function(e) {
-						e.preventDefault();
-						const url = this.dataset.preview;
-						fetch(url)
-							.then(res => res.text())
-							.then(html => document.getElementById('previewModalContent').innerHTML = html)
-							.catch(() => document.getElementById('previewModalContent').innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
+					document.querySelectorAll('.delete-btn').forEach(button => {
+						button.addEventListener('click', async (e) => {
+							e.preventDefault();
+							const filePath = button.dataset.path;
+							if (!confirm(`Are you sure you want to delete this item?\n${filePath}`)) return;
+							try {
+								const response = await fetch('/delete.php', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({ path: filePath })
+								});
+								const resultText = await response.text();
+								if (response.ok) {
+									refreshFileList(true);
+								} else {
+									alert("Delete failed: " + resultText);
+								}
+							} catch (err) {
+								alert("An error occurred: " + err);
+							}
+						});
 					});
-				});
-				document.querySelectorAll('.copy-path-btn').forEach(btn => {
-					btn.addEventListener('click', e => {
-						e.preventDefault();
-						const path = btn.dataset.path;
-						const fullUrl = window.location.origin + path;
-						navigator.clipboard.writeText(fullUrl).then(() => alert('Copied URL: ' + fullUrl));
+					document.querySelectorAll('.preview-link').forEach(link => {
+						link.addEventListener('click', function(e) {
+							e.preventDefault();
+							const url = this.dataset.preview;
+							fetch(url)
+								.then(res => res.text())
+								.then(html => document.getElementById('previewModalContent').innerHTML = html)
+								.catch(() => document.getElementById('previewModalContent').innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
+						});
 					});
-				});
+					document.querySelectorAll('.copy-path-btn').forEach(btn => {
+						btn.addEventListener('click', e => {
+							e.preventDefault();
+							const path = btn.dataset.path;
+							const fullUrl = window.location.origin + path;
+
+							// --- Start of New Robust Copy Logic ---
+
+							// A fallback function for insecure contexts (HTTP)
+							function fallbackCopyTextToClipboard(text) {
+								const textArea = document.createElement("textarea");
+								textArea.value = text;
+								
+								// Avoid scrolling to bottom
+								textArea.style.top = "0";
+								textArea.style.left = "0";
+								textArea.style.position = "fixed";
+
+								document.body.appendChild(textArea);
+								textArea.focus();
+								textArea.select();
+
+								try {
+									const successful = document.execCommand('copy');
+									if (successful) {
+										alert('Copied URL: ' + text);
+									} else {
+										alert('Could not copy URL.');
+									}
+								} catch (err) {
+									alert('Could not copy URL.');
+									console.error('Fallback: Oops, unable to copy', err);
+								}
+
+								document.body.removeChild(textArea);
+							}
+
+							// Try the modern Clipboard API first
+							if (navigator.clipboard) {
+								navigator.clipboard.writeText(fullUrl).then(() => {
+									alert('Copied URL: ' + fullUrl);
+								}).catch(err => {
+									// If it fails, it's likely due to insecure context, so use fallback
+									console.warn('Could not use modern clipboard API:', err);
+									fallbackCopyTextToClipboard(fullUrl);
+								});
+							} else {
+								// If the browser doesn't support the modern API at all
+								fallbackCopyTextToClipboard(fullUrl);
+							}
+							
+							// --- End of New Robust Copy Logic ---
+						});
+					});
 				}
 				document.getElementById('renameForm').addEventListener('submit', function(e) {
 					e.preventDefault();
