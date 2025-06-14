@@ -486,22 +486,16 @@
 					document.querySelectorAll('.details-button').forEach(btn => {
 						btn.addEventListener('click', e => {
 							e.preventDefault();
-							
-							// Get data from the button's data attributes
 							const name = btn.dataset.name;
 							const type = btn.dataset.type;
 							const path = btn.dataset.path;
 							const size = btn.dataset.size;
 							const date = btn.dataset.date;
-
-							// Populate the modal fields
 							document.getElementById('detailName').textContent = name;
 							document.getElementById('detailType').textContent = type;
 							document.getElementById('detailPath').textContent = path;
 							document.getElementById('detailSize').textContent = size;
 							document.getElementById('detailDate').textContent = date;
-							
-							// Show the modal
 							new bootstrap.Modal(document.getElementById('detailsModal')).show();
 						});
 					});
