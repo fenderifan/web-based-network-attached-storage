@@ -46,11 +46,13 @@ if (!file_exists($finalDirectory)) {
 // --- LOGGING PROGRESS (ONCE PER SECOND) ---
 $logTimeFile = $tempDir . '/' . $uploadIdentifier . '.logtime';
 $startTimeFile = $tempDir . '/' . $uploadIdentifier . '.starttime';
+$statsFile = $tempDir . '/' . $uploadIdentifier . '.stats'; // For storing performance stats
 
 // On the first chunk, record the start time of the entire upload.
 if ($chunkNumber === 0) {
     file_put_contents($startTimeFile, microtime(true));
     file_put_contents($logTimeFile, '0'); // Initialize log time tracker
+    file_put_contents($statsFile, serialize([])); // Initialize stats file
 }
 
 $lastLogTime = file_exists($logTimeFile) ? (float)file_get_contents($logTimeFile) : 0;
@@ -64,14 +66,24 @@ if ($currentTime - $lastLogTime >= 1) {
     $uploadStartTime = file_exists($startTimeFile) ? (float)file_get_contents($startTimeFile) : $currentTime;
     $timeElapsed = $currentTime - $uploadStartTime;
     // Estimate bytes uploaded based on chunk progress
-    $bytesUploaded = ($chunkNumber / $totalChunks) * $fileSize; 
+    $bytesUploaded = ($chunkNumber / $totalChunks) * $fileSize;
     $speed = $timeElapsed > 0.1 ? ($bytesUploaded / $timeElapsed) / (1024 * 1024) : 0; // MB/s
 
+    // Read existing stats, add current, and write back
+    $statsLog = file_exists($statsFile) ? unserialize(file_get_contents($statsFile)) : [];
+    $statsLog[] = [
+       'cpu' => $cpu,
+       'ram_kb' => $ram['used_kb'],
+       'ram_pct' => $ram['percent'],
+       'speed_mbps' => $speed
+    ];
+    file_put_contents($statsFile, serialize($statsLog));
+
     write_log(sprintf(
-        'Uploading "%s" (Cpu: %s, Ram: %.1fGB/%d%%, Speed: %.2f MB/s)',
+        'Uploading "%s" (Cpu: %.1f%%, Ram: %s / %d%%, Speed: %.1f MB/s)',
         $safeFileName,
         $cpu,
-        $ram['size'],
+        format_ram($ram['used_kb']),
         $ram['percent'],
         $speed
     ));
@@ -90,6 +102,7 @@ if (!move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $chunkPath)) {
     // Clean up tracking files on failure
     @unlink($logTimeFile);
     @unlink($startTimeFile);
+    @unlink($statsFile);
     exit;
 }
 
@@ -111,7 +124,7 @@ if ($isLastChunk) {
         $finalDestinationPath = $finalDirectory . '/' . $finalName;
         $counter++;
     }
-    
+
     // Log if the file was renamed
     if ($finalName !== $safeFileName) {
         write_log('File name conflict. Renamed "' . $safeFileName . '" to "' . $finalName . '"');
@@ -148,13 +161,6 @@ if ($isLastChunk) {
     // Uploading time is total time minus the final processing/assembly time
     $uploadTime = max(0, $totalTime - $processingTime);
 
-    function format_bytes($bytes) {
-        if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 1) . ' GB';
-        if ($bytes >= 1048576) return number_format($bytes / 1048576, 1) . ' MB';
-        if ($bytes >= 1024) return number_format($bytes / 1024, 1) . ' KB';
-        return $bytes . ' B';
-    }
-
     write_log(sprintf(
         'Uploaded "%s" (%s) in %.1f sec (Uploading: %.1f sec, Processing: %.1f sec)',
         $finalName,
@@ -163,10 +169,46 @@ if ($isLastChunk) {
         $uploadTime,
         $processingTime
     ));
+
+    // --- LOG PEAK/AVERAGE STATS ---
+    $statsLog = file_exists($statsFile) ? unserialize(file_get_contents($statsFile)) : [];
+    $firstTenStatsLog = array_slice($statsLog, 0, 10);
+
+    // Log Peak/Average for the first 10 seconds
+    if (!empty($firstTenStatsLog)) {
+        $cpuStats = calculate_stats(array_column($firstTenStatsLog, 'cpu'));
+        $ramPctStats = calculate_stats(array_column($firstTenStatsLog, 'ram_pct'));
+        $ramSizeStats = calculate_stats(array_column($firstTenStatsLog, 'ram_kb'));
+        $speedStats = calculate_stats(array_column($firstTenStatsLog, 'speed_mbps'));
+        write_log(sprintf(
+            'Upload Stats (first 10s Peak/Avg): CPU (%.1f%%/%.1f%%), RAM (%s/%s | %d%%/%d%%), Speed (%.1f MBps/%.1f MBps)',
+            $cpuStats['peak'], $cpuStats['avg'],
+            format_ram($ramSizeStats['peak']), format_ram($ramSizeStats['avg']),
+            $ramPctStats['peak'], $ramPctStats['avg'],
+            $speedStats['peak'], $speedStats['avg']
+        ));
+    }
     
+    // Log Peak/Average for the entire duration
+    if (!empty($statsLog)) {
+        $cpuStats = calculate_stats(array_column($statsLog, 'cpu'));
+        $ramPctStats = calculate_stats(array_column($statsLog, 'ram_pct'));
+        $ramSizeStats = calculate_stats(array_column($statsLog, 'ram_kb'));
+        $speedStats = calculate_stats(array_column($statsLog, 'speed_mbps'));
+        write_log(sprintf(
+            'Upload Stats (Total Peak/Avg): CPU (%.1f%%/%.1f%%), RAM (%s/%s | %d%%/%d%%), Speed (%.1f MBps/%.1f MBps)',
+            $cpuStats['peak'], $cpuStats['avg'],
+            format_ram($ramSizeStats['peak']), format_ram($ramSizeStats['avg']),
+            $ramPctStats['peak'], $ramPctStats['avg'],
+            $speedStats['peak'], $speedStats['avg']
+        ));
+    }
+
+
     // Clean up tracking files
     @unlink($logTimeFile);
     @unlink($startTimeFile);
+    @unlink($statsFile);
 
     echo "Upload complete: " . $finalName;
 } else {

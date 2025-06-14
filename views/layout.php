@@ -1,12 +1,18 @@
 <?php
 // layout.php
+require_once __DIR__ . '/../config.php';
+$settings = load_settings();
+
+// This block handles the muted refresh log.
+// It must come before any output.
 if (isset($_GET['log_update'])) {
+    // Set timezone before logging to ensure correct timestamp
+    date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
     error_log('Auto-refreshing file list...');
+    // We exit here so this request does nothing but log.
     exit();
 }
 
-require_once __DIR__ . '/../config.php';
-$settings = load_settings();
 $theme = $settings['theme'] ?? 'light';
 $subPath = $subPath ?? '/';
 
@@ -19,7 +25,7 @@ $text_class = $theme === 'dark' ? 'text-light' : 'text-dark';
 <html lang="en" data-bs-theme="<?= htmlspecialchars($theme) ?>">
 <head>
   <meta charset="UTF-8" />
-  <title><?= htmlspecialchars($title) ?></title>
+  <title><?= htmlspecialchars($title ?? 'File Manager') ?></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css">
   <link rel="stylesheet" href="/bootstrap/icons/bootstrap-icons.css">
@@ -155,16 +161,16 @@ html, body {
         </div>
       </div>
 
-      <div class="col p-3" style="min-height: 90vh; overflow-y: scroll; overflow: hidden;">
+      <main class="col p-3" style="min-height: 90vh; overflow-y: scroll; overflow-x:hidden;">
         <?php
-        $viewFile = __DIR__ . '/' . $view . '.php';
+        $viewFile = __DIR__ . '/' . ($view ?? '404') . '.php';
         if (file_exists($viewFile)) {
           include $viewFile;
         } else {
-          echo "<h1>404 Not Found</h1>";
+          echo "<h1>404 Not Found</h1><p>The requested view '{$view}' was not found.</p>";
         }
         ?>
-      </div>
+      </main>
     </div>
   </div>
     
@@ -275,18 +281,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.getElementById('toggleUploads');
     const uploadCountSpan = document.getElementById('uploadCount');
     const toggleIcon = toggleBtn.querySelector('i');
-    let activeUploads = 0;
+    window.activeUploads = 0; // Made global for easier access
 
     function updateUploadCount() {
-        if (uploadCountSpan) uploadCountSpan.textContent = activeUploads;
+        if (uploadCountSpan) uploadCountSpan.textContent = window.activeUploads;
     }
     
     function formatSize(bytes) {
-        if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1).replace('.', ',') + ' GB';
-        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1).replace('.', ',') + ' MB';
-        if (bytes >= 1024) return (bytes / 1024).toFixed(1).replace('.', ',') + ' KB';
-        if (bytes > 0) return bytes + ' B';
-        return '0 B';
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
     if (toggleBtn) {
@@ -304,13 +310,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     let previousHTML = '';
-    let isEditing = false;
-    document.addEventListener('focusin', e => { if (e.target.closest('.modal')) isEditing = true; });
-    document.addEventListener('focusout', e => { if (e.target.closest('.modal')) isEditing = false; });
 
-    function refreshFileList(force = false) {
-        if (isEditing && !force) return;
-        fetch(window.location.pathname + '?log_update=true');
+    function refreshFileList() {
+        const isUploadActive = window.activeUploads > 0;
+        const isDownloadActive = document.cookie.includes('download_in_progress=true');
+        const isModalActive = !!document.querySelector('.modal.show');
+
+        // Only log the refresh action if there is no user activity.
+        if (!isUploadActive && !isDownloadActive && !isModalActive) {
+            fetch(window.location.pathname + '?log_update=true');
+        }
+        
+        // Always fetch the content to refresh the list itself.
         fetch(window.location.href)
             .then(res => res.text())
             .then(html => {
@@ -321,11 +332,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (newList && currentList && newList.innerHTML !== previousHTML) {
                     previousHTML = newList.innerHTML;
                     currentList.innerHTML = newList.innerHTML;
-                    bindFileManagerButtons();
+                    bindFileManagerButtons(); // Re-bind events to new elements
                 }
             });
     }
-    setInterval(refreshFileList, 10000);
+    setInterval(refreshFileList, 10000); // Refresh every 10 seconds
 
     const overlay = document.getElementById('uploadOverlay');
     document.addEventListener('dragover', e => { e.preventDefault(); overlay.classList.remove('d-none'); });
@@ -338,23 +349,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     function uploadFileWithProgress(file) {
-        activeUploads++;
+        window.activeUploads++;
         updateUploadCount();
         uploadContainer.style.display = 'block';
         document.body.classList.add('upload-active');
         
-        const chunkSize = 10 * 1024 * 1024; // Decreased to 10MB for better speed
+        const chunkSize = 2 * 1024 * 1024;
         const totalChunks = Math.ceil(file.size / chunkSize);
         let chunkNumber = 0;
         const fileExt = (file.name.split('.').pop() || 'FILE').toUpperCase().substring(0, 4);
 
+        const containerId = 'upload-' + Math.random().toString(36).substr(2, 9);
         const container = document.createElement('div');
+        container.id = containerId;
         container.className = 'p-2 mb-2 border rounded bg-body-tertiary';
         container.innerHTML = `
           <div class="d-flex align-items-center">
             <div class="flex-shrink-0 me-2"><div class="d-flex align-items-center justify-content-center bg-body-secondary text-secondary fw-bold rounded" style="width: 40px; height: 40px; font-size: 0.8rem;">${fileExt}</div></div>
             <div class="flex-grow-1" style="min-width: 0;">
-              <div class="fw-semibold small" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${file.name}">${file.name}</div>
+              <div class="fw-semibold small text-truncate" title="${file.name}">${file.name}</div>
               <div class="progress mt-1" style="height: 5px;"><div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div></div>
               <div class="d-flex justify-content-between small text-muted mt-1">
                 <div class="upload-status" style="font-size: 0.75rem;">Starting...</div>
@@ -368,29 +381,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const statusText = container.querySelector('.upload-status');
         const metaText = container.querySelector('.upload-meta');
         
-        const startTime = performance.now() / 1000;
-        let lastBytesUploaded = 0;
+        const startTime = performance.now();
         
-        const progressInterval = setInterval(() => {
-            const currentBytesUploaded = (chunkNumber * chunkSize) + (lastBytesUploaded || 0);
-            const totalBytesUploaded = currentBytesUploaded;
-            const percentComplete = (totalBytesUploaded / file.size) * 100;
-            progressBar.style.width = `${percentComplete}%`;
-
-            const timeElapsed = (performance.now() / 1000) - startTime;
-            if (timeElapsed > 0.5) {
-                const speedBps = totalBytesUploaded / timeElapsed;
-                const speedMBps = speedBps / (1024 * 1024);
-                const remainingBytes = file.size - totalBytesUploaded;
-                const etaSeconds = speedBps > 0 ? Math.round(remainingBytes / speedBps) : 0;
-                
-                if (progressBar.classList.contains('bg-primary')) {
-                    statusText.textContent = `${speedMBps.toFixed(2)} MB/s`;
-                    metaText.textContent = `${etaSeconds}s left`;
-                }
-            }
-        }, 1000); // Update UI every 10 second
-
         function uploadNextChunk() {
             if (chunkNumber >= totalChunks) return;
 
@@ -400,27 +392,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const isLastChunk = chunkNumber === totalChunks - 1;
 
             const formData = new FormData();
-            formData.append('fileToUpload', chunk);
+            formData.append('fileToUpload', chunk, file.name); // Add filename here
             formData.append('chunkNumber', chunkNumber);
             formData.append('totalChunks', totalChunks);
             formData.append('fileName', file.name);
             formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
-            formData.append('startTime', startTime);
             formData.append('fileSize', file.size);
             
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/upload.php', true);
             
-            xhr.upload.addEventListener('progress', e => {
+            xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
-                    lastBytesUploaded = e.loaded;
+                    const percentComplete = ((start + e.loaded) / file.size) * 100;
+                    progressBar.style.width = `${percentComplete}%`;
+
+                    const timeElapsed = (performance.now() - startTime) / 1000;
+                    const speed = (start + e.loaded) / timeElapsed;
+                    statusText.textContent = `${formatSize(speed)}/s`;
+                    metaText.textContent = `${formatSize(start + e.loaded)} / ${formatSize(file.size)}`;
                 }
-            });
+            };
 
             xhr.onload = () => {
                 if (xhr.status === 200) {
                     if (isLastChunk) {
-                        clearInterval(progressInterval);
                         progressBar.style.width = '100%';
                         progressBar.classList.remove('progress-bar-animated', 'bg-warning');
                         progressBar.classList.add('bg-success');
@@ -429,40 +425,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         refreshFileList(true);
                         setTimeout(() => {
                             container.remove();
-                            activeUploads--;
+                            window.activeUploads--;
                             updateUploadCount();
-                            if (activeUploads === 0) {
+                            if (window.activeUploads === 0) {
                               document.body.classList.remove('upload-active');
                               uploadContainer.style.display = 'none';
                             }
                         }, 5000);
                     } else {
                         chunkNumber++;
-                        lastBytesUploaded = 0;
                         uploadNextChunk();
                     }
                 } else {
-                    clearInterval(progressInterval);
-                    progressBar.classList.remove('progress-bar-animated', 'bg-warning');
-                    progressBar.classList.replace('bg-primary', 'bg-danger');
+                    progressBar.classList.remove('progress-bar-animated', 'bg-primary');
+                    progressBar.classList.add('bg-danger');
                     statusText.textContent = 'Upload failed';
                     metaText.textContent = xhr.responseText || 'Server Error';
                 }
             };
 
             xhr.onerror = () => {
-                clearInterval(progressInterval);
-                progressBar.classList.remove('progress-bar-animated', 'bg-warning');
-                progressBar.classList.replace('bg-primary', 'bg-danger');
+                progressBar.classList.remove('progress-bar-animated', 'bg-primary');
+                progressBar.classList.add('bg-danger');
                 statusText.textContent = 'Network Error';
             };
-            
-            if (isLastChunk) {
-                statusText.textContent = 'Processing...';
-                metaText.textContent = formatSize(file.size);
-                progressBar.classList.remove('bg-primary');
-                progressBar.classList.add('bg-warning');
-            }
             
             xhr.send(formData);
         }
@@ -484,18 +470,31 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('folderName', folderName);
       formData.append('targetFolder', "<?= htmlspecialchars($subPath) ?>");
       fetch('/create.php', { method: 'POST', body: formData })
-        .then(res => res.ok ? refreshFileList(true) : res.text().then(alert))
+        .then(res => {
+            if(res.ok) {
+                 refreshFileList(true);
+            } else {
+                res.text().then(text => alert("Error: " + text));
+            }
+        })
         .catch(err => alert("Error: " + err));
-      const modal = bootstrap.Modal.getInstance(document.getElementById('newFolderModal'));
-      modal.hide();
+      bootstrap.Modal.getInstance(document.getElementById('newFolderModal')).hide();
     });
 
-    const previewModal = document.getElementById('previewModal');
-    previewModal.addEventListener('hidden.bs.modal', function () {
-      document.getElementById('previewModalContent').innerHTML = '';
+    previewModal.addEventListener('hidden.bs.modal', () => {
+      document.getElementById('previewModalContent').innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
     });
 
     function bindFileManagerButtons() {
+        // Download link handler
+        document.querySelectorAll('.dropdown-item[download]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Set a cookie that expires in 60 seconds as a fallback.
+                // download.php will clear it on completion.
+                document.cookie = "download_in_progress=true; path=/; max-age=60";
+            });
+        });
+
         document.querySelectorAll('.rename-button').forEach(btn => {
           btn.addEventListener('click', e => {
               e.preventDefault();
@@ -503,50 +502,44 @@ document.addEventListener('DOMContentLoaded', () => {
               const name = btn.dataset.name;
               const isDir = btn.closest('.list-group-item').querySelector('.bi-folder-fill') !== null;
               document.getElementById('oldPathInput').value = path;
-              document.getElementById('oldNameInput').value = name; // For logging
+              document.getElementById('oldNameInput').value = name;
               const newBaseNameInput = document.getElementById('newBaseNameInput');
               const newExtensionInput = document.getElementById('newExtensionInput');
-              const extensionGroup = newExtensionInput.closest('.mb-3');
+              
               if (isDir) {
                   newBaseNameInput.value = name;
                   newExtensionInput.value = '';
-                  extensionGroup.style.display = 'none';
+                  newExtensionInput.closest('.mb-3').style.display = 'none';
               } else {
                   const lastDot = name.lastIndexOf('.');
-                  if (lastDot !== -1 && lastDot !== 0) {
-                      newBaseNameInput.value = name.substring(0, lastDot);
-                      newExtensionInput.value = name.substring(lastDot + 1);
-                  } else {
-                      newBaseNameInput.value = name;
-                      newExtensionInput.value = '';
-                  }
-                  extensionGroup.style.display = 'block';
+                  newBaseNameInput.value = lastDot !== -1 ? name.substring(0, lastDot) : name;
+                  newExtensionInput.value = lastDot !== -1 ? name.substring(lastDot + 1) : '';
+                  newExtensionInput.closest('.mb-3').style.display = 'block';
               }
-              const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
-              renameModal.show();
+              new bootstrap.Modal(document.getElementById('renameModal')).show();
           });
       });
 
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
                 e.preventDefault();
-                const filePath = button.getAttribute('data-path');
-                if (!filePath) return alert("No file path provided.");
-                if (!confirm(`Are you sure you want to delete this item?\n\nPath: ${filePath}`)) return;
+                const filePath = button.dataset.path;
+                if (!confirm(`Are you sure you want to delete this item?\n${filePath}`)) return;
+                
                 try {
                     const response = await fetch('/delete.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ path: filePath })
                     });
+                    const resultText = await response.text();
                     if (response.ok) {
                         refreshFileList(true);
                     } else {
-                        const resultText = await response.text();
                         alert("Delete failed: " + resultText);
                     }
                 } catch (err) {
-                    alert("An error occurred during deletion.");
+                    alert("An error occurred: " + err);
                 }
             });
         });
@@ -555,19 +548,17 @@ document.addEventListener('DOMContentLoaded', () => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const url = this.dataset.preview;
-                const modalBody = document.getElementById('previewModalContent');
-                modalBody.innerHTML = '<div class="modal-body text-center p-5 text-muted">Loading...</div>';
                 fetch(url)
                     .then(res => res.text())
-                    .then(html => modalBody.innerHTML = html)
-                    .catch(() => modalBody.innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
+                    .then(html => document.getElementById('previewModalContent').innerHTML = html)
+                    .catch(() => document.getElementById('previewModalContent').innerHTML = '<div class="modal-body text-danger text-center p-5">Error loading preview.</div>');
             });
         });
 
         document.querySelectorAll('.copy-path-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.preventDefault();
-                const path = btn.getAttribute('data-path');
+                const path = btn.dataset.path;
                 const fullUrl = window.location.origin + path;
                 navigator.clipboard.writeText(fullUrl).then(() => alert('Copied URL: ' + fullUrl));
             });
@@ -576,31 +567,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('renameForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const base = document.getElementById('newBaseNameInput').value.trim();
-        const ext = document.getElementById('newExtensionInput').value.trim();
-        const isDir = document.getElementById('newExtensionInput').closest('.mb-3').style.display === 'none';
-        let newName = base;
-        if (!isDir && ext) {
-            newName = `${base}.${ext}`;
-        }
         const formData = new FormData(this);
-        formData.set('newName', newName);
-        fetch('/update.php', {
-                method: 'POST',
-                body: formData
-            })
+        const base = formData.get('newBaseName').trim();
+        const ext = formData.get('newExtension').trim();
+        const isDir = document.getElementById('newExtensionInput').closest('.mb-3').style.display === 'none';
+        
+        let newName = base;
+        if (!isDir && ext) newName += '.' + ext;
+        
+        formData.append('newName', newName);
+
+        fetch('/update.php', { method: 'POST', body: formData })
             .then(res => {
                 if (res.ok) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('renameModal'));
-                    modal.hide();
+                    bootstrap.Modal.getInstance(document.getElementById('renameModal')).hide();
                     refreshFileList(true);
                 } else {
-                    return res.text().then(msg => alert("Rename failed: " + msg));
+                    res.text().then(msg => alert("Rename failed: " + msg));
                 }
             })
             .catch(err => alert("Error: " + err));
     });
 
+    // Initial binding of buttons
     bindFileManagerButtons();
 });
 </script>

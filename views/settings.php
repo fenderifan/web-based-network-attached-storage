@@ -44,13 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // --- DISPLAY SETTINGS PAGE (GET REQUEST) ---
 $currentSettings = load_settings();
 
-function format_bytes($bytes) {
-    if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 2) . ' GB';
-    if ($bytes >= 1048576) return number_format($bytes / 1048576, 2) . ' MB';
-    if ($bytes >= 1024) return number_format($bytes / 1024, 2) . ' KB';
-    if ($bytes > 0) return $bytes . ' B';
-    return '0 B';
-}
 
 // Get disk space info
 $diskFree = @disk_free_space(__DIR__);
