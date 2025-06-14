@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/logging.php';
 
-// Load settings to ensure consistent behavior
+// Load settings and set timezone for accurate logs
 $settings = load_settings();
+date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
 
 // Define constants for file type checks
 define('IMAGE_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
@@ -43,7 +45,18 @@ $mimeTypes = [
 ];
 $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
 
-// --- Raw File Streaming ---
+// Helper function to check if the extension is an image
+function is_image($ext) {
+    return in_array($ext, IMAGE_EXTENSIONS);
+}
+
+// Helper function to check if the extension is a video
+function is_video($ext) {
+    return in_array($ext, VIDEO_EXTENSIONS);
+}
+
+
+// --- Raw File Streaming with Logging ---
 // This block handles direct file delivery for images and videos.
 // It's triggered by adding `&raw=1` to the URL.
 if (isset($_GET['raw']) && $_GET['raw'] === '1') {
@@ -60,25 +73,99 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
     // Suggest 'inline' for media types that the browser can display directly
     $disposition = in_array($ext, array_merge(IMAGE_EXTENSIONS, VIDEO_EXTENSIONS)) ? 'inline' : 'attachment';
     header('Content-Disposition: ' . $disposition . '; filename="' . $filename . '"');
+    
+    // Flush all headers to the client
+    flush();
 
-    // Offload file transfer to the web server, which is highly optimized for this task.
-    // This avoids high RAM and CPU usage in PHP.
-    readfile($fullPath);
+    // --- LOGIC FOR VIDEO STREAMING ---
+    if (is_video($ext)) {
+        $streamStartTime = microtime(true);
+        $logInterval = 1; // Log every 1 second
+        $lastLogTime = $streamStartTime;
+        $statsLog = [];
+
+        // Check if this is the initial request for the video (not a range request for seeking)
+        $is_initial_request = !isset($_SERVER['HTTP_RANGE']) || strpos($_SERVER['HTTP_RANGE'], 'bytes=0-') === 0;
+        if ($is_initial_request) {
+            write_log(sprintf('Streaming preview for "%s" (%s)...', $filename, format_bytes($fileSize)));
+        }
+
+        $file = @fopen($fullPath, 'rb');
+        if ($file) {
+            while (!feof($file) && !connection_aborted()) {
+                // Read and send a chunk of the file
+                echo fread($file, 1024 * 1024); // 1MB chunks
+                flush();
+                
+                $bytesSent = ftell($file);
+                $currentTime = microtime(true);
+
+                // Log stats periodically
+                if ($currentTime - $lastLogTime >= $logInterval) {
+                     $ram = get_ram_usage();
+                     $cpu = get_cpu_usage();
+                     $timeElapsed = $currentTime - $streamStartTime;
+                     $speed = $timeElapsed > 0 ? ($bytesSent / $timeElapsed) / (1024 * 1024) : 0; // MB/s
+
+                     $currentStats = [
+                        'cpu' => $cpu,
+                        'ram_kb' => $ram['used_kb'],
+                        'ram_pct' => $ram['percent'],
+                        'speed_mbps' => $speed
+                     ];
+                     $statsLog[] = $currentStats;
+                     
+                     write_log(sprintf(
+                        'Streaming "%s" (Cpu: %.1f%%, Ram: %s / %d%%, Speed: %.1f MB/s)',
+                        $filename, $cpu, format_ram($ram['used_kb']), $ram['percent'], $speed
+                     ));
+                     $lastLogTime = $currentTime;
+                }
+            }
+            fclose($file);
+        }
+
+        $totalTime = microtime(true) - $streamStartTime;
+        // Only log the finish and stats message if the stream was long enough to have stats
+        if (!empty($statsLog)) {
+            write_log(sprintf('Finished streaming "%s" in %.1f sec', $filename, $totalTime));
+
+            // Log Peak/Average stats for the entire duration
+            $cpuStats = calculate_stats(array_column($statsLog, 'cpu'));
+            $ramPctStats = calculate_stats(array_column($statsLog, 'ram_pct'));
+            $ramSizeStats = calculate_stats(array_column($statsLog, 'ram_kb'));
+            $speedStats = calculate_stats(array_column($statsLog, 'speed_mbps'));
+            write_log(sprintf(
+                'Streaming Stats (Total Peak/Avg): CPU (%.1f%%/%.1f%%), RAM (%s/%s | %d%%/%d%%), Speed (%.1f MBps/%.1f MBps)',
+                $cpuStats['peak'], $cpuStats['avg'],
+                format_ram($ramSizeStats['peak']), format_ram($ramSizeStats['avg']),
+                $ramPctStats['peak'], $ramPctStats['avg'],
+                $speedStats['peak'], $speedStats['avg']
+            ));
+        }
+    
+    // --- LOGIC FOR IMAGE PREVIEW ---
+    } elseif (is_image($ext)) {
+        $ram = get_ram_usage();
+        $cpu = get_cpu_usage();
+        write_log(sprintf(
+            'Previewing image "%s" (%s) - CPU: %.1f%%, RAM: %s / %d%%',
+            $filename, format_bytes($fileSize), $cpu, format_ram($ram['used_kb']), $ram['percent']
+        ));
+        readfile($fullPath);
+    
+    // --- FALLBACK FOR OTHER FILE TYPES ---
+    } else {
+        // No special logging needed for non-media types
+        readfile($fullPath);
+    }
+    
     exit;
 }
 
 // --- HTML Modal Generation ---
 // This part generates the HTML content for the preview modal window.
-
-// Helper function to check if the extension is an image
-function is_image($ext) {
-    return in_array($ext, IMAGE_EXTENSIONS);
-}
-
-// Helper function to check if the extension is a video
-function is_video($ext) {
-    return in_array($ext, VIDEO_EXTENSIONS);
-}
+// No changes are needed here.
 ?>
 
 <div class="modal-header">
