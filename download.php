@@ -76,10 +76,10 @@
         $ramSizeStats = calculate_stats(array_column($firstTenStatsLog, 'ram_kb'));
         $speedStats = calculate_stats(array_column($firstTenStatsLog, 'speed_mbps'));
         write_log(sprintf(
-            'Download Stats (first 10s Peak/Avg): CPU (%.1f%%/%.1f%%), RAM (%s/%s | %d%%/%d%%), Speed (%.1f MBps/%.1f MBps)',
+            'Download Stats (first 10s Peak/Avg): CPU (%.1f%% / %.1f%%), RAM (%s (%d%%) / %s (%d%%)), Speed (%.1f MBps / %.1f MBps)',
             $cpuStats['peak'], $cpuStats['avg'],
-            format_ram($ramSizeStats['peak']), format_ram($ramSizeStats['avg']),
-            $ramPctStats['peak'], $ramPctStats['avg'],
+            format_ram($ramSizeStats['peak']), $ramPctStats['peak'],
+            format_ram($ramSizeStats['avg']), $ramPctStats['avg'],
             $speedStats['peak'], $speedStats['avg']
         ));
     }
@@ -89,10 +89,10 @@
         $ramSizeStats = calculate_stats(array_column($statsLog, 'ram_kb'));
         $speedStats = calculate_stats(array_column($statsLog, 'speed_mbps'));
         write_log(sprintf(
-            'Download Stats (Total Peak/Avg): CPU (%.1f%%/%.1f%%), RAM (%s/%s | %d%%/%d%%), Speed (%.1f MBps/%.1f MBps)',
+            'Download Stats (Total Peak/Avg): CPU (%.1f%% / %.1f%%), RAM (%s (%d%%) / %s (%d%%)), Speed (%.1f MBps / %.1f MBps)',
             $cpuStats['peak'], $cpuStats['avg'],
-            format_ram($ramSizeStats['peak']), format_ram($ramSizeStats['avg']),
-            $ramPctStats['peak'], $ramPctStats['avg'],
+            format_ram($ramSizeStats['peak']), $ramPctStats['peak'],
+            format_ram($ramSizeStats['avg']), $ramPctStats['avg'],
             $speedStats['peak'], $speedStats['avg']
         ));
     }
