@@ -1,5 +1,10 @@
 <?php
 require_once __DIR__ . '/logging.php';
+require_once __DIR__ . '/config.php';
+
+// Set timezone for consistent logs
+$settings = load_settings();
+date_default_timezone_set($settings['timezone'] ?? 'Asia/Jakarta');
 
 $baseDir = realpath(__DIR__ . '/files');
 $requestedPath = $_GET['path'] ?? '';

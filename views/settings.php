@@ -170,35 +170,59 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData(this);
             // Manually append checkbox values if they are not checked, because unchecked
             // checkboxes are not included in form data by default.
-            if (!formData.has('show_hidden_files')) formData.append('show_hidden_files', '');
-            if (!formData.has('type_grouping')) formData.append('type_grouping', '');
 
             const alertContainer = document.getElementById('alert-container');
 
-            fetch('/settings', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json()) 
-            .then(data => {
-                if (data.success) {
-                    const newTheme = formData.get('theme');
-                    document.documentElement.setAttribute('data-bs-theme', newTheme);
-                    
-                    alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
-                    setTimeout(() => alertContainer.innerHTML = '', 3000);
+            // REPLACE THE OLD fetch BLOCK WITH THIS ONE
 
-                    // Optional: You may want to reload the page to see all setting changes apply
-                    // window.location.reload(); 
-                } else {
-                    throw new Error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alertContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-                setTimeout(() => alertContainer.innerHTML = '', 3000);
-            });
+fetch('/settings', {
+    method: 'POST',
+    body: formData
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        const alertContainer = document.getElementById('alert-container');
+        alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+        setTimeout(() => alertContainer.innerHTML = '', 3000);
+
+        const newTheme = formData.get('theme');
+        const isDark = newTheme === 'dark';
+
+        // 1. Set the global theme attribute for Bootstrap components
+        document.documentElement.setAttribute('data-bs-theme', newTheme);
+
+        // 2. Manually update the navbar class
+        const navbar = document.querySelector('.navbar.d-md-none');
+        if (navbar) {
+            navbar.classList.toggle('bg-dark', isDark);
+            navbar.classList.toggle('bg-light', !isDark);
+        }
+
+        // 3. Manually update sidebar classes (mobile and desktop)
+        const sidebars = document.querySelectorAll('.offcanvas, .d-none.d-md-block.position-sticky');
+        sidebars.forEach(sidebar => {
+            sidebar.classList.toggle('sidebar-custom-dark', isDark);
+            sidebar.classList.toggle('bg-light', !isDark);
+        });
+
+        // 4. Manually update sidebar text colors
+        const sidebarText = document.querySelectorAll('.offcanvas .nav-link, .position-sticky .nav-link, .offcanvas-title, .position-sticky h5');
+        sidebarText.forEach(el => {
+            el.classList.toggle('text-light', isDark);
+            el.classList.toggle('text-dark', !isDark);
+        });
+
+    } else {
+        throw new Error(data.message);
+    }
+})
+.catch(error => {
+    const alertContainer = document.getElementById('alert-container');
+    console.error('Error:', error);
+    alertContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    setTimeout(() => alertContainer.innerHTML = '', 3000);
+});
         });
     }
 });
