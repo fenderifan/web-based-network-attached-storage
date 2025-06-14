@@ -342,7 +342,7 @@
 					updateUploadCount();
 					uploadContainer.style.display = 'block';
 					document.body.classList.add('upload-active');
-					const chunkSize = 5 * 1024 * 1024;
+					const chunkSize = <?= $settings['chunk_size'] ?? 5 ?> * 1024 * 1024;
 					const totalChunks = Math.ceil(file.size / chunkSize);
 					let chunkNumber = 0;
 					const fileExt = (file.name.split('.').pop() || 'FILE').toUpperCase().substring(0, 4);
