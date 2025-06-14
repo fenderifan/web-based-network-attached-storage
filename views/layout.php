@@ -248,6 +248,33 @@
 				</div>
 			</div>
 		</div>
+		<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="detailsModalTitle">Item Details</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<dl class="row mb-0">
+							<dt class="col-sm-4">Name:</dt>
+							<dd class="col-sm-8" id="detailName"></dd>
+							<dt class="col-sm-4">Type:</dt>
+							<dd class="col-sm-8" id="detailType"></dd>
+							<dt class="col-sm-4">Location:</dt>
+							<dd class="col-sm-8" style="word-wrap: break-word;" id="detailPath"></dd>
+							<dt class="col-sm-4">Size:</dt>
+							<dd class="col-sm-8" id="detailSize"></dd>
+							<dt class="col-sm-4">Modified:</dt>
+							<dd class="col-sm-8" id="detailDate"></dd>
+						</dl>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
 		<?php if (strpos($_SERVER['REQUEST_URI'], '/files') === 0): ?>
 		<script>
 			document.addEventListener('DOMContentLoaded', () => {
@@ -454,6 +481,28 @@
 								newExtensionInput.closest('.mb-3').style.display = 'block';
 							}
 							new bootstrap.Modal(document.getElementById('renameModal')).show();
+						});
+					});
+					document.querySelectorAll('.details-button').forEach(btn => {
+						btn.addEventListener('click', e => {
+							e.preventDefault();
+							
+							// Get data from the button's data attributes
+							const name = btn.dataset.name;
+							const type = btn.dataset.type;
+							const path = btn.dataset.path;
+							const size = btn.dataset.size;
+							const date = btn.dataset.date;
+
+							// Populate the modal fields
+							document.getElementById('detailName').textContent = name;
+							document.getElementById('detailType').textContent = type;
+							document.getElementById('detailPath').textContent = path;
+							document.getElementById('detailSize').textContent = size;
+							document.getElementById('detailDate').textContent = date;
+							
+							// Show the modal
+							new bootstrap.Modal(document.getElementById('detailsModal')).show();
 						});
 					});
 					document.querySelectorAll('.delete-btn').forEach(button => {

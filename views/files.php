@@ -186,6 +186,11 @@
                         <?= $download ?>
                         <a href="#" class="copy-path-btn dropdown-item" data-path="<?= htmlspecialchars($itemUri) ?>">Copy path</a>
                         <li><a class="dropdown-item rename-button" href="#" data-path="<?= htmlspecialchars($itemUri) ?>" data-name="<?= htmlspecialchars($item) ?>">Rename</a></li>
+                        <li>
+                            <a class="dropdown-item details-button" href="#" data-name="<?= htmlspecialchars($item) ?>" data-type="<?= htmlspecialchars($type) ?>" data-size="<?= htmlspecialchars($size) ?>" data-date="<?= htmlspecialchars($dateModified) ?>" data-path="<?= htmlspecialchars(rtrim($subPath, '/') . '/' . $item) ?>">
+                                Details
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger delete-btn" href="#" data-path="<?= htmlspecialchars($itemUri) ?>">Delete</a></li>
                     </ul>
