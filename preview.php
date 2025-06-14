@@ -82,12 +82,11 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
         $streamStartTime = microtime(true);
         $logInterval = 1; // Log every 1 second
         $lastLogTime = $streamStartTime;
-        $statsLog = [];
 
         // Check if this is the initial request for the video (not a range request for seeking)
         $is_initial_request = !isset($_SERVER['HTTP_RANGE']) || strpos($_SERVER['HTTP_RANGE'], 'bytes=0-') === 0;
         if ($is_initial_request) {
-            write_log(sprintf('Streaming preview for "%s" (%s)...', $filename, format_bytes($fileSize)));
+            write_log(sprintf('Preview Video "%s" (%s)...', $filename, format_bytes($fileSize)));
         }
 
         $file = @fopen($fullPath, 'rb');
@@ -106,17 +105,9 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
                      $cpu = get_cpu_usage();
                      $timeElapsed = $currentTime - $streamStartTime;
                      $speed = $timeElapsed > 0 ? ($bytesSent / $timeElapsed) / (1024 * 1024) : 0; // MB/s
-
-                     $currentStats = [
-                        'cpu' => $cpu,
-                        'ram_kb' => $ram['used_kb'],
-                        'ram_pct' => $ram['percent'],
-                        'speed_mbps' => $speed
-                     ];
-                     $statsLog[] = $currentStats;
                      
                      write_log(sprintf(
-                        'Streaming "%s" (Cpu: %.1f%%, Ram: %s / %d%%, Speed: %.1f MB/s)',
+                        'Streaming Video "%s" (Cpu: %.1f%%, Ram: %s / %d%%, Speed: %.1f MB/s)',
                         $filename, $cpu, format_ram($ram['used_kb']), $ram['percent'], $speed
                      ));
                      $lastLogTime = $currentTime;
@@ -124,32 +115,13 @@ if (isset($_GET['raw']) && $_GET['raw'] === '1') {
             }
             fclose($file);
         }
-
-        $totalTime = microtime(true) - $streamStartTime;
-        // Only log the finish and stats message if the stream was long enough to have stats
-        if (!empty($statsLog)) {
-            write_log(sprintf('Finished streaming "%s" in %.1f sec', $filename, $totalTime));
-
-            // Log Peak/Average stats for the entire duration
-            $cpuStats = calculate_stats(array_column($statsLog, 'cpu'));
-            $ramPctStats = calculate_stats(array_column($statsLog, 'ram_pct'));
-            $ramSizeStats = calculate_stats(array_column($statsLog, 'ram_kb'));
-            $speedStats = calculate_stats(array_column($statsLog, 'speed_mbps'));
-            write_log(sprintf(
-                'Streaming Stats (Total Peak/Avg): CPU (%.1f%%/%.1f%%), RAM (%s/%s | %d%%/%d%%), Speed (%.1f MBps/%.1f MBps)',
-                $cpuStats['peak'], $cpuStats['avg'],
-                format_ram($ramSizeStats['peak']), format_ram($ramSizeStats['avg']),
-                $ramPctStats['peak'], $ramPctStats['avg'],
-                $speedStats['peak'], $speedStats['avg']
-            ));
-        }
     
     // --- LOGIC FOR IMAGE PREVIEW ---
     } elseif (is_image($ext)) {
         $ram = get_ram_usage();
         $cpu = get_cpu_usage();
         write_log(sprintf(
-            'Previewing image "%s" (%s) - CPU: %.1f%%, RAM: %s / %d%%',
+            'Preview Image "%s" (%s) - CPU: %.1f%%, RAM: %s / %d%%',
             $filename, format_bytes($fileSize), $cpu, format_ram($ram['used_kb']), $ram['percent']
         ));
         readfile($fullPath);
