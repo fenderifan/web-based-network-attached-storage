@@ -3,22 +3,19 @@
 	require_once __DIR__ . '/../logging.php';
 	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$oldSettings = load_settings();
-		$chunkSize = filter_input(INPUT_POST, 'chunk_size', FILTER_VALIDATE_INT, [
-			'options' => ['default' => 5, 'min_range' => 1, 'max_range' => 20]
-		]);
 		$newSettings = [
 			'theme' => isset($_POST['theme']) && $_POST['theme'] === 'dark' ? 'dark' : 'light',
 			'timezone' => isset($_POST['timezone']) && in_array($_POST['timezone'], DateTimeZone::listIdentifiers()) ? $_POST['timezone'] : ($oldSettings['timezone'] ?? 'Asia/Jakarta'),
 			'default_sort' => $_POST['default_sort'] ?? ($oldSettings['default_sort'] ?? 'name_asc'),
 			'show_hidden_files' => isset($_POST['show_hidden_files']),
 			'type_grouping' => isset($_POST['type_grouping']),
-			'chunk_size' => $chunkSize
+			'chunk_size' => $_POST['chunk_size'] ?? ($oldSettings['chunk_size'] ?? '5')
 		];
 		foreach ($newSettings as $key => $newValue) {
 			$oldValue = $oldSettings[$key] ?? null;
 			$displayOld = is_bool($oldValue) ? ($oldValue ? 'true' : 'false') : $oldValue;
 			$displayNew = is_bool($newValue) ? ($newValue ? 'true' : 'false') : $newValue;
-			if ($oldValue !== $newValue) {
+			if ($oldValue != $newValue) {
 				write_log("Setting changed: '{$key}' from '{$displayOld}' to '{$displayNew}'");
 			}
 		}
@@ -85,8 +82,16 @@
 					<label class="form-check-label" for="typeGrouping">Group by File Type</label>
 				</div>
 				<div class="mb-3">
-					<label for="chunkSizeInput" class="form-label">Upload Chunk Size (MB)</label>
-					<input type="number" class="form-control" id="chunkSizeInput" name="chunk_size" min="1" max="20" value="<?= htmlspecialchars($currentSettings['chunk_size'] ?? 5) ?>">
+					<label for="chunkSizeSelect" class="form-label">Upload Chunk Size (MB)</label>
+					<select id="chunkSizeSelect" name="chunk_size" class="form-select">
+						<?php
+							$current_chunk_size = $currentSettings['chunk_size'] ?? '5';
+							for ($i = 1; $i <= 20; $i++) {
+								$selected = ($i == $current_chunk_size) ? 'selected' : '';
+								echo "<option value=\"{$i}\" {$selected}>{$i} MB</option>";
+							}
+						?>
+					</select>
 					<div class="form-text">Set the size of each chunk for large file uploads (1-20 MB). Larger sizes can be faster but use more memory.</div>
 				</div>
 				<button type="submit" class="btn btn-primary">Save Changes</button>

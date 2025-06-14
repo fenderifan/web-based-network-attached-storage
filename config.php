@@ -5,7 +5,7 @@
 					'show_hidden_files' => false,
 					'default_sort' => 'name_asc',
 					'theme' => 'light',
-					'chunk_size' => 5,
+					'chunk_size' => "5",
 			];
 			if (!file_exists(CONFIG_PATH)) {
 					return $defaults;

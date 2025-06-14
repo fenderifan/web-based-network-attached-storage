@@ -11,6 +11,7 @@
         $settings['show_hidden_files'] = isset($_POST['show_hidden_files']);
         $settings['type_grouping'] = isset($_POST['type_grouping']);
         $settings['timezone'] = $_POST['timezone'] ?? 'Asia/Jakarta';
+        $settings['chunk_size'] = $_POST['chunk_size'] ?? '5';
         header('Content-Type: application/json');
 
         if (save_settings($settings)) {
