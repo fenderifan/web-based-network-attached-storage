@@ -27,7 +27,8 @@
         '/update.php' => 'update.php',
         '/upload.php' => 'upload.php',
         '/create.php' => 'create.php',
-        '/delete.php' => 'delete.php'
+        '/delete.php' => 'delete.php',
+        '/cleanup' => 'cleanup.php'
     ];
     if (array_key_exists($uri, $scriptRoutes)) {
         include __DIR__ . '/' . $scriptRoutes[$uri];

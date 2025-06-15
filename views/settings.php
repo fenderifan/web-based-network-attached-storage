@@ -144,6 +144,13 @@
 			</div>
 		</div>
 	</div>
+	<div class="card mt-4">
+		<div class="card-header">Maintenance</div>
+		<div class="card-body">
+			<p class="card-text text-muted">If you have failed or interrupted uploads, temporary files may be left behind in the cache. You can clear these files manually to free up space.</p>
+			<button id="clearCacheBtn" class="btn btn-warning">Clear Upload Cache</button>
+		</div>
+	</div>
 </div>
 <script>
 	document.addEventListener('DOMContentLoaded', () => {
@@ -190,5 +197,40 @@
 				});
 			});
 		}
+		const clearCacheBtn = document.getElementById('clearCacheBtn');
+        if(clearCacheBtn) {
+            clearCacheBtn.addEventListener('click', function() {
+                if (!confirm('Are you sure you want to delete all temporary upload files? This action cannot be undone.')) {
+                    return;
+                }
+
+                const alertContainer = document.getElementById('alert-container');
+                alertContainer.innerHTML = `<div class="alert alert-info">Clearing cache...</div>`;
+
+                fetch('/cleanup', {
+                    method: 'POST'
+                }).then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.message || 'Server error') });
+                    }
+                    return response.json();
+                }).then(data => {
+                    if (data.success) {
+                        alertContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                    } else {
+                        throw new Error(data.message);
+                    }
+                }).catch(error => {
+                    console.error('Cleanup Error:', error);
+                    alertContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+                }).finally(() => {
+                    setTimeout(() => {
+                        if (!alertContainer.querySelector('.alert-danger')) {
+                            alertContainer.innerHTML = '';
+                        }
+                    }, 4000);
+                });
+            });
+        }
 	});
 </script>
