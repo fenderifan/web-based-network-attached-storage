@@ -126,7 +126,7 @@
 						<i class="bi bi-hdd-stack-fill text-primary"></i>
 						<span>My Storage</span>
 					</a>
-					<a href="http://192.168.1.36:8080" target="_blank" rel="noopener noreferrer" class="app-button">
+					<a href="#" id="casaos-link" target="_blank" rel="noopener noreferrer" class="app-button">
 						<i class="bi bi-house-door-fill text-success"></i>
 						<span>CasaOS</span>
 					</a>
@@ -144,6 +144,10 @@
 			}
 			setInterval(updateClock, 1000);
 			updateClock();
+			const casaosLink = document.getElementById('casaos-link');
+			if (casaosLink) {
+				casaosLink.href = `http://${window.location.hostname}:8080`;
+			}
 		</script>
 	</body>
 </html>
