@@ -30,17 +30,12 @@
 				flex-direction: column;
 				justify-content: center;
 				align-items: center;
-				flex-basis: 50%;
+				flex-basis: 100%; /* Changed to 100% */
 				padding: 2rem;
 				background: linear-gradient(to right, #ffffff, #e9ecef);
 				transition: background 0.3s ease;
 			}
-			.poster-panel {
-				flex-basis: 50%;
-				background-image: url('/img/poster.jpg');
-				background-size: cover;
-				background-position: center;
-			}
+			/* Removed .poster-panel CSS */
 			.clock {
 				font-size: 4rem;
 				font-weight: 300;
@@ -109,8 +104,8 @@
 			}
 			@media (max-width: 767.98px) {
 				.main-container { flex-direction: column; }
-				.menu-panel { flex-basis: auto; height: 55%; justify-content: center; }
-				.poster-panel { flex-basis: auto; height: 45%; }
+				.menu-panel { flex-basis: auto; height: 100%; justify-content: center; } /* Adjusted for small screens */
+				/* Removed .poster-panel for small screens */
 				.clock { font-size: 3rem; }
 				.app-grid { gap: 1rem; }
 			}
@@ -132,8 +127,7 @@
 					</a>
 				</div>
 			</div>
-			<div class="poster-panel"></div>
-		</div>
+			</div>
 		<script>
 			function updateClock() {
 				const now = new Date();
