@@ -61,6 +61,9 @@
     $items = [];
 
     foreach ($rawItems as $item) {
+        if ($item === '.gitignore' || $item === '.gitkeep') { //
+            continue; //
+        }
         if (!($settings['show_hidden_files'] ?? false) && $item[0] === '.') {
             continue;
         }
